@@ -346,17 +346,17 @@ function MyPage({profile,onClose,onProfileUpdate}){
         .then(({data})=>{if(data&&!cancelled)setCurrentTherapistInfo(data);})
         .catch(()=>{});
     }
-    // 치료자 목록 조회 (5초 타임아웃)
-    const timeout=new Promise(r=>setTimeout(()=>r({data:[],error:"timeout"}),5000));
-    Promise.race([
-      supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name"),
-      timeout
-    ]).then(({data,error:e})=>{
-      if(!cancelled){setTherapists(e?[]:(data||[]));setTherapistsLoading(false);}
-    }).catch(()=>{
-      if(!cancelled){setTherapists([]);setTherapistsLoading(false);}
-    });
-    return()=>{cancelled=true;};
+    // 치료자 목록 조회 — 4초 후 무조건 로딩 종료
+    const fallback=setTimeout(()=>{if(!cancelled)setTherapistsLoading(false);},4000);
+    (async()=>{
+      try{
+        const{data,error:e}=await supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name");
+        if(!cancelled){setTherapists(e?[]:(data||[]));setTherapistsLoading(false);clearTimeout(fallback);}
+      }catch{
+        if(!cancelled){setTherapists([]);setTherapistsLoading(false);clearTimeout(fallback);}
+      }
+    })();
+    return()=>{cancelled=true;clearTimeout(fallback);};
   },[]);
 
   const saveTherapist=async()=>{
