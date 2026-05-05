@@ -48,11 +48,21 @@ function AuthScreen({onAuth}){
   const[password,setPassword]=useState("");
   const[name,setName]=useState("");
   const[role,setRole]=useState("client");
-  const[therapistEmail,setTherapistEmail]=useState("");
+  const[therapistId,setTherapistId]=useState("");
+  const[therapists,setTherapists]=useState([]);
+  const[therapistsLoading,setTherapistsLoading]=useState(false);
   const[loading,setLoading]=useState(false);
   const[error,setError]=useState("");
   const[msg,setMsg]=useState("");
   const inp={width:"100%",padding:"12px 14px",borderRadius:12,border:`1.5px solid ${P.border}`,background:P.bg,color:P.text,fontSize:14,boxSizing:"border-box",fontFamily:"inherit",outline:"none"};
+
+  useEffect(()=>{
+    if(mode==="signup"&&role==="client"){
+      setTherapistsLoading(true);
+      supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name")
+        .then(({data})=>{setTherapists(data||[]);setTherapistsLoading(false);});
+    }
+  },[mode,role]);
 
   const submit=async()=>{
     setError("");setMsg("");
@@ -68,12 +78,7 @@ function AuthScreen({onAuth}){
         if(!name){setError("이름을 입력해주세요.");setLoading(false);return;}
         const{data,error:e}=await supabase.auth.signUp({email,password});
         if(e)throw e;
-        let therapistId=null;
-        if(role==="client"&&therapistEmail){
-          const{data:th}=await supabase.from("profiles").select("id").eq("email",therapistEmail).eq("role","therapist").single();
-          if(th)therapistId=th.id;
-        }
-        await supabase.from("profiles").insert({id:data.user.id,email,name,role,therapist_id:therapistId});
+        await supabase.from("profiles").insert({id:data.user.id,email,name,role,therapist_id:role==="client"&&therapistId?therapistId:null});
         setMsg("가입 완료! 이메일 인증 후 로그인해주세요.");setMode("login");
       }
     }catch(e){setError(e.message||"오류가 발생했어요.");}
@@ -104,10 +109,19 @@ function AuthScreen({onAuth}){
             {mode==="signup"&&<>
               <div style={{display:"flex",gap:8}}>
                 {[{v:"client",label:"🙋 내담자"},{v:"therapist",label:"👩‍⚕️ 치료자"}].map(r=>(
-                  <button key={r.v} onClick={()=>setRole(r.v)} style={{flex:1,padding:"9px",borderRadius:12,border:role===r.v?`2px solid ${P.accent2}`:`1.5px solid ${P.border}`,background:role===r.v?P.accent2+"28":"transparent",color:role===r.v?"#5a9fb5":P.muted,fontWeight:role===r.v?700:400,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{r.label}</button>
+                  <button key={r.v} onClick={()=>{setRole(r.v);setTherapistId("");}} style={{flex:1,padding:"9px",borderRadius:12,border:role===r.v?`2px solid ${P.accent2}`:`1.5px solid ${P.border}`,background:role===r.v?P.accent2+"28":"transparent",color:role===r.v?"#5a9fb5":P.muted,fontWeight:role===r.v?700:400,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{r.label}</button>
                 ))}
               </div>
-              {role==="client"&&<input placeholder="치료자 이메일 (선택사항)" value={therapistEmail} onChange={e=>setTherapistEmail(e.target.value)} style={inp}/>}
+              {role==="client"&&(
+                therapistsLoading
+                  ?<div style={{padding:"12px 14px",borderRadius:12,border:`1.5px solid ${P.border}`,background:P.bg,fontSize:13,color:P.muted}}>치료자 목록 불러오는 중...</div>
+                  :<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={{...inp,appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e8f8f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 14px center",paddingRight:36,cursor:"pointer"}}>
+                    <option value="">치료자 선택 (선택사항)</option>
+                    {therapists.map(t=>(
+                      <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
+                    ))}
+                  </select>
+              )}
             </>}
             {error&&<div style={{fontSize:12,color:P.danger,padding:"8px 12px",background:P.danger+"15",borderRadius:10}}>{error}</div>}
             {msg&&<div style={{fontSize:12,color:P.success,padding:"8px 12px",background:P.success+"15",borderRadius:10}}>{msg}</div>}
