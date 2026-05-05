@@ -710,20 +710,22 @@ export default function App(){
   const[checking,setChecking]=useState(true);
 
   useEffect(()=>{
+    let done=false;
+    const fallback=setTimeout(()=>{if(!done){done=true;setChecking(false);}},5000);
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session?.user){
         const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
         setUser(session.user);setProfile(p);
       }
-      setChecking(false);
-    });
+      if(!done){done=true;clearTimeout(fallback);setChecking(false);}
+    }).catch(()=>{if(!done){done=true;clearTimeout(fallback);setChecking(false);}});
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
       if(session?.user){
         const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
         setUser(session.user);setProfile(p);
       }else{setUser(null);setProfile(null);}
     });
-    return()=>subscription.unsubscribe();
+    return()=>{subscription.unsubscribe();clearTimeout(fallback);};
   },[]);
 
   const logout=async()=>{await supabase.auth.signOut();setUser(null);setProfile(null);};
