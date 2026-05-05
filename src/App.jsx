@@ -64,8 +64,8 @@ function AuthScreen({onAuth}){
       setTherapistsFetchFailed(false);
       supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name")
         .then(({data,error:e})=>{
-          if(e||!data){setTherapistsFetchFailed(true);setTherapists([]);}
-          else{setTherapists(data);}
+          if(e){setTherapistsFetchFailed(true);setTherapists([]);}
+          else{setTherapists(data||[]);}
           setTherapistsLoading(false);
         });
     }
@@ -130,14 +130,17 @@ function AuthScreen({onAuth}){
               {role==="client"&&(
                 therapistsLoading
                   ?<div style={{padding:"12px 14px",borderRadius:12,border:`1.5px solid ${P.border}`,background:P.bg,fontSize:13,color:P.muted}}>치료자 목록 불러오는 중...</div>
-                  :therapistsFetchFailed||therapists.length===0
-                    ?<input placeholder="치료자 이메일 (선택사항)" value={therapistEmail} onChange={e=>setTherapistEmail(e.target.value)} style={inp}/>
-                    :<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={{...inp,appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e8f8f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 14px center",paddingRight:36,cursor:"pointer"}}>
+                  :therapists.length>0
+                    ?<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={{...inp,appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e8f8f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 14px center",paddingRight:36,cursor:"pointer"}}>
                       <option value="">치료자 선택 (선택사항)</option>
                       {therapists.map(t=>(
                         <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
                       ))}
                     </select>
+                    :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      <input placeholder="치료자 이메일 (선택사항)" value={therapistEmail} onChange={e=>setTherapistEmail(e.target.value)} style={inp}/>
+                      <div style={{fontSize:11,color:P.muted,padding:"0 4px"}}>치료자가 먼저 가입해야 목록에 표시돼요.</div>
+                    </div>
               )}
             </>}
             {error&&<div style={{fontSize:12,color:P.danger,padding:"8px 12px",background:P.danger+"15",borderRadius:10}}>{error}</div>}
