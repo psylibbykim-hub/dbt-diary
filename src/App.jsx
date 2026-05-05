@@ -49,8 +49,10 @@ function AuthScreen({onAuth}){
   const[name,setName]=useState("");
   const[role,setRole]=useState("client");
   const[therapistId,setTherapistId]=useState("");
+  const[therapistEmail,setTherapistEmail]=useState("");
   const[therapists,setTherapists]=useState([]);
   const[therapistsLoading,setTherapistsLoading]=useState(false);
+  const[therapistsFetchFailed,setTherapistsFetchFailed]=useState(false);
   const[loading,setLoading]=useState(false);
   const[error,setError]=useState("");
   const[msg,setMsg]=useState("");
@@ -59,8 +61,13 @@ function AuthScreen({onAuth}){
   useEffect(()=>{
     if(mode==="signup"&&role==="client"){
       setTherapistsLoading(true);
+      setTherapistsFetchFailed(false);
       supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name")
-        .then(({data})=>{setTherapists(data||[]);setTherapistsLoading(false);});
+        .then(({data,error:e})=>{
+          if(e||!data){setTherapistsFetchFailed(true);setTherapists([]);}
+          else{setTherapists(data);}
+          setTherapistsLoading(false);
+        });
     }
   },[mode,role]);
 
@@ -78,7 +85,15 @@ function AuthScreen({onAuth}){
         if(!name){setError("이름을 입력해주세요.");setLoading(false);return;}
         const{data,error:e}=await supabase.auth.signUp({email,password});
         if(e)throw e;
-        await supabase.from("profiles").insert({id:data.user.id,email,name,role,therapist_id:role==="client"&&therapistId?therapistId:null});
+        let resolvedTherapistId=null;
+        if(role==="client"){
+          if(therapistId){resolvedTherapistId=therapistId;}
+          else if(therapistEmail){
+            const{data:th}=await supabase.from("profiles").select("id").eq("email",therapistEmail).eq("role","therapist").single();
+            if(th)resolvedTherapistId=th.id;
+          }
+        }
+        await supabase.from("profiles").insert({id:data.user.id,email,name,role,therapist_id:resolvedTherapistId});
         setMsg("가입 완료! 이메일 인증 후 로그인해주세요.");setMode("login");
       }
     }catch(e){setError(e.message||"오류가 발생했어요.");}
@@ -115,12 +130,14 @@ function AuthScreen({onAuth}){
               {role==="client"&&(
                 therapistsLoading
                   ?<div style={{padding:"12px 14px",borderRadius:12,border:`1.5px solid ${P.border}`,background:P.bg,fontSize:13,color:P.muted}}>치료자 목록 불러오는 중...</div>
-                  :<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={{...inp,appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e8f8f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 14px center",paddingRight:36,cursor:"pointer"}}>
-                    <option value="">치료자 선택 (선택사항)</option>
-                    {therapists.map(t=>(
-                      <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-                    ))}
-                  </select>
+                  :therapistsFetchFailed||therapists.length===0
+                    ?<input placeholder="치료자 이메일 (선택사항)" value={therapistEmail} onChange={e=>setTherapistEmail(e.target.value)} style={inp}/>
+                    :<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={{...inp,appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e8f8f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 14px center",paddingRight:36,cursor:"pointer"}}>
+                      <option value="">치료자 선택 (선택사항)</option>
+                      {therapists.map(t=>(
+                        <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
+                      ))}
+                    </select>
               )}
             </>}
             {error&&<div style={{fontSize:12,color:P.danger,padding:"8px 12px",background:P.danger+"15",borderRadius:10}}>{error}</div>}
