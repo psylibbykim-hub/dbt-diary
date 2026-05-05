@@ -270,11 +270,14 @@ function TherapistDashboard({profile,onLogout}){
 // ── CALENDAR VIEW ─────────────────────────────────────────────────
 function CalendarView({allData,selDate,onSelectDate}){
   const today=todayStr();
-  const[calYear,setCalYear]=useState(()=>parseInt(selDate.slice(0,4)));
-  const[calMonth,setCalMonth]=useState(()=>parseInt(selDate.slice(5,7))-1);
+  const[calYear,setCalYear]=useState(()=>parseInt(today.slice(0,4)));
+  const[calMonth,setCalMonth]=useState(()=>parseInt(today.slice(5,7))-1);
 
   const prevMonth=()=>{if(calMonth===0){setCalYear(y=>y-1);setCalMonth(11);}else setCalMonth(m=>m-1);};
   const nextMonth=()=>{if(calMonth===11){setCalYear(y=>y+1);setCalMonth(0);}else setCalMonth(m=>m+1);};
+  const goToday=()=>{setCalYear(parseInt(today.slice(0,4)));setCalMonth(parseInt(today.slice(5,7))-1);};
+
+  const isCurrentMonth=calYear===parseInt(today.slice(0,4))&&calMonth===parseInt(today.slice(5,7))-1;
 
   const firstDay=new Date(calYear,calMonth,1).getDay();
   const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
@@ -286,7 +289,10 @@ function CalendarView({allData,selDate,onSelectDate}){
     <Card>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
         <button onClick={prevMonth} style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.bg,fontSize:16,cursor:"pointer",color:P.muted}}>‹</button>
-        <div style={{fontSize:15,fontWeight:700,color:P.text}}>{calYear}년 {calMonth+1}월</div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{fontSize:15,fontWeight:700,color:P.text}}>{calYear}년 {calMonth+1}월</div>
+          {!isCurrentMonth&&<button onClick={goToday} style={{fontSize:11,padding:"3px 8px",borderRadius:8,border:`1px solid ${P.accent}`,background:P.accent+"18",color:P.accent,cursor:"pointer",fontFamily:"inherit",fontWeight:600}}>오늘</button>}
+        </div>
         <button onClick={nextMonth} style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.bg,fontSize:16,cursor:"pointer",color:P.muted}}>›</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:6}}>
@@ -323,6 +329,7 @@ function CalendarView({allData,selDate,onSelectDate}){
 function MyPage({profile,onClose,onProfileUpdate}){
   const[therapists,setTherapists]=useState([]);
   const[therapistsLoading,setTherapistsLoading]=useState(true);
+  const[currentTherapistInfo,setCurrentTherapistInfo]=useState(null);
   const[therapistId,setTherapistId]=useState(profile.therapist_id||"");
   const[therapistEmail,setTherapistEmail]=useState("");
   const[newPassword,setNewPassword]=useState("");
@@ -332,6 +339,11 @@ function MyPage({profile,onClose,onProfileUpdate}){
   const[error,setError]=useState("");
 
   useEffect(()=>{
+    // 현재 치료자 개별 조회 (목록 RLS 우회)
+    if(profile.therapist_id){
+      supabase.from("profiles").select("id,name,email").eq("id",profile.therapist_id).single()
+        .then(({data})=>{if(data)setCurrentTherapistInfo(data);});
+    }
     supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name")
       .then(({data})=>{setTherapists(data||[]);setTherapistsLoading(false);});
   },[]);
@@ -345,8 +357,14 @@ function MyPage({profile,onClose,onProfileUpdate}){
       else{setError("해당 이메일의 치료자를 찾을 수 없어요.");setSaving(false);return;}
     }
     const{error:e}=await supabase.from("profiles").update({therapist_id:resolvedId}).eq("id",profile.id);
-    if(e)setError(e.message);
-    else{setMsg("치료자 정보가 저장됐어요.");onProfileUpdate({...profile,therapist_id:resolvedId});}
+    if(e){setError(e.message);}
+    else{
+      const newInfo=resolvedId?therapists.find(t=>t.id===resolvedId)||currentTherapistInfo:null;
+      setCurrentTherapistInfo(newInfo);
+      setMsg(resolvedId?"치료자 정보가 저장됐어요.":"치료자 연결이 해제됐어요.");
+      setTherapistEmail("");
+      onProfileUpdate({...profile,therapist_id:resolvedId});
+    }
     setSaving(false);
   };
 
@@ -361,7 +379,7 @@ function MyPage({profile,onClose,onProfileUpdate}){
     setSaving(false);
   };
 
-  const currentTherapist=therapists.find(t=>t.id===profile.therapist_id);
+  const displayTherapist=therapists.find(t=>t.id===therapistId)||currentTherapistInfo;
 
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -372,13 +390,25 @@ function MyPage({profile,onClose,onProfileUpdate}){
 
         {/* 치료자 섹션 */}
         <div style={{marginBottom:22}}>
-          <div style={{fontSize:14,fontWeight:600,color:P.text,marginBottom:4}}>👩‍⚕️ 내 치료자</div>
-          {currentTherapist
-            ?<div style={{fontSize:13,color:P.muted,marginBottom:10,padding:"8px 12px",background:P.bg,borderRadius:10}}>현재: <strong style={{color:P.text}}>{currentTherapist.name}</strong> ({currentTherapist.email})</div>
-            :<div style={{fontSize:13,color:P.muted,marginBottom:10}}>연결된 치료자가 없어요.</div>
+          <div style={{fontSize:14,fontWeight:600,color:P.text,marginBottom:10}}>👩‍⚕️ 내 치료자</div>
+
+          {/* 현재 치료자 표시 */}
+          {profile.therapist_id
+            ?<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:`linear-gradient(135deg,${P.accent2}22,${P.accent3}22)`,borderRadius:14,border:`1.5px solid ${P.accent2}`,marginBottom:14}}>
+              <div style={{fontSize:24}}>👩‍⚕️</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:P.text}}>{currentTherapistInfo?.name||"치료자 연결됨"}</div>
+                <div style={{fontSize:11,color:P.muted}}>{currentTherapistInfo?.email||"이름을 불러오는 중..."}</div>
+              </div>
+              <button onClick={()=>{setTherapistId("");}} title="연결 해제" style={{width:28,height:28,borderRadius:8,border:`1px solid ${P.border}`,background:P.card,fontSize:13,cursor:"pointer",color:P.muted,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            </div>
+            :<div style={{padding:"12px 14px",background:P.bg,borderRadius:12,border:`1.5px dashed ${P.border}`,marginBottom:14,fontSize:13,color:P.muted,textAlign:"center"}}>연결된 치료자가 없어요</div>
           }
+
+          {/* 치료자 변경/추가 */}
+          <div style={{fontSize:12,color:P.muted,marginBottom:8}}>{profile.therapist_id?"치료자 변경":"치료자 추가"}</div>
           {therapistsLoading
-            ?<div style={{fontSize:13,color:P.muted}}>목록 불러오는 중...</div>
+            ?<div style={{fontSize:13,color:P.muted,padding:"10px 0"}}>목록 불러오는 중...</div>
             :therapists.length>0
               ?<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={SELECT_STYLE}>
                 <option value="">치료자 선택 안함</option>
@@ -390,7 +420,7 @@ function MyPage({profile,onClose,onProfileUpdate}){
               </div>
           }
           <button onClick={saveTherapist} disabled={saving} style={{marginTop:10,width:"100%",padding:"11px",borderRadius:12,border:"none",background:P.accent2,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
-            {saving?"저장 중...":"치료자 저장"}
+            {saving?"저장 중...":"저장"}
           </button>
         </div>
 
