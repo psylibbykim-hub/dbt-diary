@@ -33,7 +33,7 @@ const CRISIS_GUIDE=[
 ];
 const CAL_DAYS=["일","월","화","수","목","금","토"];
 
-const todayStr=()=>new Date().toISOString().slice(0,10);
+const todayStr=()=>{const d=new Date();return`${d.getFullYear()}-${padZ(d.getMonth()+1)}-${padZ(d.getDate())}`;};
 const emptyEntry=()=>({emotions:{},skills:[],impulses:{},goals:{medication:false,sleep:"",meals:0,exercise:false,therapy:false},note:""});
 const fmtDate=(d)=>{const dt=new Date(d+"T00:00:00");return`${dt.getMonth()+1}/${dt.getDate()}`};
 const impColor=(v)=>v>=8?P.danger:v>=5?P.warn:P.success;
