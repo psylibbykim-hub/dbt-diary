@@ -339,13 +339,24 @@ function MyPage({profile,onClose,onProfileUpdate}){
   const[error,setError]=useState("");
 
   useEffect(()=>{
-    // 현재 치료자 개별 조회 (목록 RLS 우회)
+    let cancelled=false;
+    // 현재 치료자 개별 조회
     if(profile.therapist_id){
       supabase.from("profiles").select("id,name,email").eq("id",profile.therapist_id).single()
-        .then(({data})=>{if(data)setCurrentTherapistInfo(data);});
+        .then(({data})=>{if(data&&!cancelled)setCurrentTherapistInfo(data);})
+        .catch(()=>{});
     }
-    supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name")
-      .then(({data})=>{setTherapists(data||[]);setTherapistsLoading(false);});
+    // 치료자 목록 조회 (5초 타임아웃)
+    const timeout=new Promise(r=>setTimeout(()=>r({data:[],error:"timeout"}),5000));
+    Promise.race([
+      supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name"),
+      timeout
+    ]).then(({data,error:e})=>{
+      if(!cancelled){setTherapists(e?[]:(data||[]));setTherapistsLoading(false);}
+    }).catch(()=>{
+      if(!cancelled){setTherapists([]);setTherapistsLoading(false);}
+    });
+    return()=>{cancelled=true;};
   },[]);
 
   const saveTherapist=async()=>{
