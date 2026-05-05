@@ -102,7 +102,7 @@ function AuthScreen({onAuth}){
 
   return(
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#fff5f8 0%,#f0f8ff 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"'DM Sans',sans-serif"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap'); @keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap'); @keyframes spin{to{transform:rotate(360deg)}} *{box-sizing:border-box} body{overflow-x:hidden}`}</style>
       <div style={{width:"100%",maxWidth:380}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{fontSize:40,marginBottom:8}}>🌸</div>
@@ -176,7 +176,7 @@ function TherapistDashboard({profile,onLogout}){
 
   return(
     <div style={{minHeight:"100vh",background:P.bg,fontFamily:"'DM Sans',sans-serif",paddingBottom:40}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');@keyframes spin{to{transform:rotate(360deg)}} *{box-sizing:border-box} body{overflow-x:hidden}`}</style>
       <div style={{background:"linear-gradient(160deg,#fff5f8,#f0f8ff)",borderBottom:`1px solid ${P.border}`,padding:"16px 18px",boxShadow:`0 2px 12px ${P.shadow}`}}>
         <div style={{maxWidth:720,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div>
@@ -335,7 +335,7 @@ function ClientDiary({profile,onLogout}){
 
   return(
     <div style={{minHeight:"100vh",background:P.bg,color:P.text,fontFamily:"'DM Sans',sans-serif",paddingBottom:60}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');@keyframes spin{to{transform:rotate(360deg)}} input[type=range]{-webkit-appearance:none;height:6px;border-radius:3px;outline:none} input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:${P.accent};cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.15)} textarea{outline:none} ::-webkit-scrollbar{height:4px} ::-webkit-scrollbar-thumb{background:${P.border};border-radius:2px}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');@keyframes spin{to{transform:rotate(360deg)}} *{box-sizing:border-box} body{overflow-x:hidden;max-width:100%} input[type=range]{-webkit-appearance:none;height:6px;border-radius:3px;outline:none} input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:${P.accent};cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.15)} textarea{outline:none} ::-webkit-scrollbar{height:4px} ::-webkit-scrollbar-thumb{background:${P.border};border-radius:2px}`}</style>
 
       {/* HEADER */}
       <div style={{background:"linear-gradient(160deg,#fff5f8 0%,#f0f8ff 100%)",borderBottom:`1px solid ${P.border}`,padding:"16px 16px 13px",position:"sticky",top:0,zIndex:20,boxShadow:`0 2px 12px ${P.shadow}`}}>
