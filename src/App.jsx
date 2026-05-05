@@ -13,6 +13,9 @@ const P = {
   shadow:"rgba(180,140,130,0.12)",
 };
 
+const INP={width:"100%",padding:"12px 14px",borderRadius:12,border:`1.5px solid ${P.border}`,background:P.bg,color:P.text,fontSize:14,boxSizing:"border-box",fontFamily:"inherit",outline:"none"};
+const SELECT_STYLE={...INP,appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e8f8f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 14px center",paddingRight:36,cursor:"pointer"};
+
 const EMOTIONS=[{name:"기쁨",emoji:"😊"},{name:"슬픔",emoji:"😢"},{name:"분노",emoji:"😠"},{name:"불안",emoji:"😰"},{name:"수치심",emoji:"😳"},{name:"죄책감",emoji:"😞"},{name:"두려움",emoji:"😨"},{name:"사랑",emoji:"🥰"}];
 const DBT_SKILLS=[
   {category:"마음챙김",emoji:"🧘",color:"#a8d8ea",skills:[{name:"관찰하기",desc:"판단 없이 현재 순간을 있는 그대로 바라보세요."},{name:"묘사하기",desc:"경험을 말로 표현하되 해석을 붙이지 마세요."},{name:"참여하기",desc:"현재 활동에 완전히 몰입하세요."},{name:"비판단적으로",desc:"자신과 타인을 판단하지 않는 태도를 연습하세요."},{name:"한 가지에 집중",desc:"한 번에 하나의 일에만 집중하세요."},{name:"효과적으로",desc:"상황에서 실제로 효과 있는 방법을 선택하세요."}]},
@@ -28,11 +31,13 @@ const CRISIS_GUIDE=[
   {step:"4단계",title:"장단점 분석",desc:"충동에 따랐을 때의 결과를 떠올려보세요. 장기적으로 나에게 도움이 되나요?",icon:"⚖️"},
   {step:"5단계",title:"전문가에게 연락",desc:"자살예방상담전화 1393 (24시간), 정신건강위기상담 1577-0199",icon:"📞"},
 ];
+const CAL_DAYS=["일","월","화","수","목","금","토"];
 
 const todayStr=()=>new Date().toISOString().slice(0,10);
 const emptyEntry=()=>({emotions:{},skills:[],impulses:{},goals:{medication:false,sleep:"",meals:0,exercise:false,therapy:false},note:""});
 const fmtDate=(d)=>{const dt=new Date(d+"T00:00:00");return`${dt.getMonth()+1}/${dt.getDate()}`};
 const impColor=(v)=>v>=8?P.danger:v>=5?P.warn:P.success;
+const padZ=(n)=>String(n).padStart(2,"0");
 
 function Card({children,style={}}){return<div style={{background:P.card,borderRadius:20,padding:18,marginBottom:14,boxShadow:`0 2px 16px ${P.shadow}`,border:`1px solid ${P.border}`,...style}}>{children}</div>}
 function SecTitle({title,sub,emoji}){return<div style={{marginBottom:14}}><div style={{fontSize:15,fontWeight:600,color:P.text}}>{emoji&&<span style={{marginRight:6}}>{emoji}</span>}{title}</div>{sub&&<div style={{fontSize:12,color:P.muted,marginTop:2}}>{sub}</div>}</div>}
@@ -40,6 +45,7 @@ function Toggle({value,onChange}){return<div onClick={()=>onChange(!value)} styl
 function CheckRow({label,value,onChange}){return<div onClick={()=>onChange(!value)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 0",borderBottom:`1px solid ${P.border}`,cursor:"pointer"}}><span style={{fontSize:14,color:P.text}}>{label}</span><Toggle value={value} onChange={onChange}/></div>}
 function Pill({label,active,color,onClick}){return<button onClick={onClick} style={{padding:"6px 13px",borderRadius:20,fontSize:13,fontWeight:active?600:400,border:active?`2px solid ${color}`:`1.5px solid ${P.border}`,background:active?color+"28":"transparent",color:active?color:P.muted,cursor:"pointer",transition:"all 0.15s",fontFamily:"inherit"}}>{active?"✓ ":""}{label}</button>}
 function Spinner(){return<div style={{width:24,height:24,border:`3px solid ${P.border}`,borderTopColor:P.accent,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>}
+function IconBtn({emoji,onClick,label}){return<button onClick={onClick} title={label} style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.card,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{emoji}</button>}
 
 // ── AUTH ──────────────────────────────────────────────────────────
 function AuthScreen({onAuth}){
@@ -52,22 +58,15 @@ function AuthScreen({onAuth}){
   const[therapistEmail,setTherapistEmail]=useState("");
   const[therapists,setTherapists]=useState([]);
   const[therapistsLoading,setTherapistsLoading]=useState(false);
-  const[therapistsFetchFailed,setTherapistsFetchFailed]=useState(false);
   const[loading,setLoading]=useState(false);
   const[error,setError]=useState("");
   const[msg,setMsg]=useState("");
-  const inp={width:"100%",padding:"12px 14px",borderRadius:12,border:`1.5px solid ${P.border}`,background:P.bg,color:P.text,fontSize:14,boxSizing:"border-box",fontFamily:"inherit",outline:"none"};
 
   useEffect(()=>{
     if(mode==="signup"&&role==="client"){
       setTherapistsLoading(true);
-      setTherapistsFetchFailed(false);
       supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name")
-        .then(({data,error:e})=>{
-          if(e){setTherapistsFetchFailed(true);setTherapists([]);}
-          else{setTherapists(data||[]);}
-          setTherapistsLoading(false);
-        });
+        .then(({data,error:e})=>{setTherapists(e?[]:(data||[]));setTherapistsLoading(false);});
     }
   },[mode,role]);
 
@@ -118,9 +117,9 @@ function AuthScreen({onAuth}){
             ))}
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {mode==="signup"&&<input placeholder="이름" value={name} onChange={e=>setName(e.target.value)} style={inp}/>}
-            <input placeholder="이메일" type="email" value={email} onChange={e=>setEmail(e.target.value)} style={inp}/>
-            <input placeholder="비밀번호 (6자 이상)" type="password" value={password} onChange={e=>setPassword(e.target.value)} style={inp}/>
+            {mode==="signup"&&<input placeholder="이름" value={name} onChange={e=>setName(e.target.value)} style={INP}/>}
+            <input placeholder="이메일" type="email" value={email} onChange={e=>setEmail(e.target.value)} style={INP}/>
+            <input placeholder="비밀번호 (6자 이상)" type="password" value={password} onChange={e=>setPassword(e.target.value)} style={INP}/>
             {mode==="signup"&&<>
               <div style={{display:"flex",gap:8}}>
                 {[{v:"client",label:"🙋 내담자"},{v:"therapist",label:"👩‍⚕️ 치료자"}].map(r=>(
@@ -131,14 +130,12 @@ function AuthScreen({onAuth}){
                 therapistsLoading
                   ?<div style={{padding:"12px 14px",borderRadius:12,border:`1.5px solid ${P.border}`,background:P.bg,fontSize:13,color:P.muted}}>치료자 목록 불러오는 중...</div>
                   :therapists.length>0
-                    ?<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={{...inp,appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239e8f8f' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 14px center",paddingRight:36,cursor:"pointer"}}>
+                    ?<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={SELECT_STYLE}>
                       <option value="">치료자 선택 (선택사항)</option>
-                      {therapists.map(t=>(
-                        <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
-                      ))}
+                      {therapists.map(t=><option key={t.id} value={t.id}>{t.name} ({t.email})</option>)}
                     </select>
                     :<div style={{display:"flex",flexDirection:"column",gap:6}}>
-                      <input placeholder="치료자 이메일 (선택사항)" value={therapistEmail} onChange={e=>setTherapistEmail(e.target.value)} style={inp}/>
+                      <input placeholder="치료자 이메일 (선택사항)" value={therapistEmail} onChange={e=>setTherapistEmail(e.target.value)} style={INP}/>
                       <div style={{fontSize:11,color:P.muted,padding:"0 4px"}}>치료자가 먼저 가입해야 목록에 표시돼요.</div>
                     </div>
               )}
@@ -190,12 +187,11 @@ function TherapistDashboard({profile,onLogout}){
         </div>
       </div>
       <div style={{maxWidth:720,margin:"0 auto",padding:"16px 14px",display:"flex",gap:14,flexWrap:"wrap"}}>
-        {/* 내담자 목록 */}
         <div style={{width:190,flexShrink:0}}>
           <div style={{fontSize:13,fontWeight:600,color:P.muted,marginBottom:10}}>내담자 목록</div>
           {loading?<Spinner/>:clients.length===0?(
             <div style={{fontSize:12,color:P.muted,background:P.card,borderRadius:14,padding:14,border:`1px solid ${P.border}`,lineHeight:1.7}}>
-              아직 연결된 내담자가 없어요.<br/><br/>내담자 회원가입 시 아래 이메일을 입력하면 연결돼요.<br/><br/><strong style={{color:P.accent}}>{profile.email}</strong>
+              아직 연결된 내담자가 없어요.<br/><br/>내담자가 마이페이지에서 치료자를 선택하거나 가입 시 선택하면 연결돼요.<br/><br/><strong style={{color:P.accent}}>{profile.email}</strong>
             </div>
           ):clients.map(c=>(
             <div key={c.id} onClick={()=>pickClient(c)} style={{padding:"10px 12px",borderRadius:12,marginBottom:8,cursor:"pointer",border:selected?.id===c.id?`2px solid ${P.accent}`:`1.5px solid ${P.border}`,background:selected?.id===c.id?P.accent+"15":P.card}}>
@@ -204,7 +200,6 @@ function TherapistDashboard({profile,onLogout}){
             </div>
           ))}
         </div>
-        {/* 다이어리 뷰 */}
         <div style={{flex:1,minWidth:280}}>
           {!selected?(
             <Card style={{textAlign:"center",padding:40}}><div style={{fontSize:30,marginBottom:10}}>👈</div><div style={{fontSize:14,color:P.muted}}>내담자를 선택하세요</div></Card>
@@ -272,21 +267,172 @@ function TherapistDashboard({profile,onLogout}){
   );
 }
 
+// ── CALENDAR VIEW ─────────────────────────────────────────────────
+function CalendarView({allData,selDate,onSelectDate}){
+  const today=todayStr();
+  const[calYear,setCalYear]=useState(()=>parseInt(selDate.slice(0,4)));
+  const[calMonth,setCalMonth]=useState(()=>parseInt(selDate.slice(5,7))-1);
+
+  const prevMonth=()=>{if(calMonth===0){setCalYear(y=>y-1);setCalMonth(11);}else setCalMonth(m=>m-1);};
+  const nextMonth=()=>{if(calMonth===11){setCalYear(y=>y+1);setCalMonth(0);}else setCalMonth(m=>m+1);};
+
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const totalCells=firstDay+daysInMonth;
+  const rows=Math.ceil(totalCells/7);
+  const cells=Array.from({length:rows*7},(_,i)=>{const d=i-firstDay+1;return(d>=1&&d<=daysInMonth)?d:null;});
+
+  return(
+    <Card>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+        <button onClick={prevMonth} style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.bg,fontSize:16,cursor:"pointer",color:P.muted}}>‹</button>
+        <div style={{fontSize:15,fontWeight:700,color:P.text}}>{calYear}년 {calMonth+1}월</div>
+        <button onClick={nextMonth} style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.bg,fontSize:16,cursor:"pointer",color:P.muted}}>›</button>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",marginBottom:6}}>
+        {CAL_DAYS.map((d,i)=>(
+          <div key={d} style={{textAlign:"center",fontSize:11,fontWeight:600,color:i===0?P.danger:i===6?P.accent2:P.muted,padding:"4px 0"}}>{d}</div>
+        ))}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"3px 0"}}>
+        {cells.map((d,i)=>{
+          if(!d)return<div key={i}/>;
+          const ds=`${calYear}-${padZ(calMonth+1)}-${padZ(d)}`;
+          const isToday=ds===today;
+          const isSel=ds===selDate;
+          const hasEntry=!!allData[ds];
+          const col=i%7===0?P.danger:i%7===6?P.accent2:P.text;
+          return(
+            <div key={i} onClick={()=>onSelectDate(ds)} style={{textAlign:"center",padding:"5px 2px",borderRadius:10,cursor:"pointer",background:isSel?P.accent:isToday?P.accent2+"44":"transparent",border:isSel?`2px solid ${P.accent}`:isToday?`1.5px solid ${P.accent2}`:"1.5px solid transparent",transition:"all 0.1s"}}>
+              <div style={{fontSize:13,fontWeight:isSel||isToday?700:400,color:isSel?"#fff":col}}>{d}</div>
+              {hasEntry&&<div style={{width:4,height:4,borderRadius:"50%",background:isSel?"#fff":P.accent,margin:"2px auto 0"}}/>}
+              {!hasEntry&&<div style={{height:6}}/>}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{marginTop:14,display:"flex",gap:12,fontSize:11,color:P.muted,justifyContent:"center"}}>
+        <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:P.accent,marginRight:4,verticalAlign:"middle"}}/>기록 있음</span>
+        <span><span style={{display:"inline-block",width:8,height:8,borderRadius:"50%",background:P.accent2,marginRight:4,verticalAlign:"middle"}}/>오늘</span>
+      </div>
+    </Card>
+  );
+}
+
+// ── MY PAGE ───────────────────────────────────────────────────────
+function MyPage({profile,onClose,onProfileUpdate}){
+  const[therapists,setTherapists]=useState([]);
+  const[therapistsLoading,setTherapistsLoading]=useState(true);
+  const[therapistId,setTherapistId]=useState(profile.therapist_id||"");
+  const[therapistEmail,setTherapistEmail]=useState("");
+  const[newPassword,setNewPassword]=useState("");
+  const[confirmPassword,setConfirmPassword]=useState("");
+  const[saving,setSaving]=useState(false);
+  const[msg,setMsg]=useState("");
+  const[error,setError]=useState("");
+
+  useEffect(()=>{
+    supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name")
+      .then(({data})=>{setTherapists(data||[]);setTherapistsLoading(false);});
+  },[]);
+
+  const saveTherapist=async()=>{
+    setSaving(true);setMsg("");setError("");
+    let resolvedId=therapistId||null;
+    if(!resolvedId&&therapistEmail){
+      const{data:th}=await supabase.from("profiles").select("id").eq("email",therapistEmail).eq("role","therapist").single();
+      if(th)resolvedId=th.id;
+      else{setError("해당 이메일의 치료자를 찾을 수 없어요.");setSaving(false);return;}
+    }
+    const{error:e}=await supabase.from("profiles").update({therapist_id:resolvedId}).eq("id",profile.id);
+    if(e)setError(e.message);
+    else{setMsg("치료자 정보가 저장됐어요.");onProfileUpdate({...profile,therapist_id:resolvedId});}
+    setSaving(false);
+  };
+
+  const changePassword=async()=>{
+    setMsg("");setError("");
+    if(newPassword.length<6){setError("비밀번호는 6자 이상이어야 해요.");return;}
+    if(newPassword!==confirmPassword){setError("비밀번호가 일치하지 않아요.");return;}
+    setSaving(true);
+    const{error:e}=await supabase.auth.updateUser({password:newPassword});
+    if(e)setError(e.message);
+    else{setMsg("비밀번호가 변경됐어요.");setNewPassword("");setConfirmPassword("");}
+    setSaving(false);
+  };
+
+  const currentTherapist=therapists.find(t=>t.id===profile.therapist_id);
+
+  return(
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:P.card,borderRadius:"20px 20px 0 0",padding:24,maxWidth:520,width:"100%",maxHeight:"85vh",overflowY:"auto",boxShadow:"0 -4px 30px rgba(0,0,0,0.14)"}}>
+        <div style={{width:40,height:4,background:P.border,borderRadius:2,margin:"0 auto 18px"}}/>
+        <div style={{fontSize:18,fontWeight:700,color:P.text,marginBottom:4}}>👤 마이페이지</div>
+        <div style={{fontSize:12,color:P.muted,marginBottom:20}}>{profile.name} · {profile.email}</div>
+
+        {/* 치료자 섹션 */}
+        <div style={{marginBottom:22}}>
+          <div style={{fontSize:14,fontWeight:600,color:P.text,marginBottom:4}}>👩‍⚕️ 내 치료자</div>
+          {currentTherapist
+            ?<div style={{fontSize:13,color:P.muted,marginBottom:10,padding:"8px 12px",background:P.bg,borderRadius:10}}>현재: <strong style={{color:P.text}}>{currentTherapist.name}</strong> ({currentTherapist.email})</div>
+            :<div style={{fontSize:13,color:P.muted,marginBottom:10}}>연결된 치료자가 없어요.</div>
+          }
+          {therapistsLoading
+            ?<div style={{fontSize:13,color:P.muted}}>목록 불러오는 중...</div>
+            :therapists.length>0
+              ?<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={SELECT_STYLE}>
+                <option value="">치료자 선택 안함</option>
+                {therapists.map(t=><option key={t.id} value={t.id}>{t.name} ({t.email})</option>)}
+              </select>
+              :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <input placeholder="치료자 이메일로 연결" value={therapistEmail} onChange={e=>setTherapistEmail(e.target.value)} style={INP}/>
+                <div style={{fontSize:11,color:P.muted}}>치료자가 먼저 가입해야 목록에 표시돼요.</div>
+              </div>
+          }
+          <button onClick={saveTherapist} disabled={saving} style={{marginTop:10,width:"100%",padding:"11px",borderRadius:12,border:"none",background:P.accent2,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+            {saving?"저장 중...":"치료자 저장"}
+          </button>
+        </div>
+
+        <div style={{height:1,background:P.border,marginBottom:20}}/>
+
+        {/* 비밀번호 섹션 */}
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:14,fontWeight:600,color:P.text,marginBottom:12}}>🔒 비밀번호 변경</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <input type="password" placeholder="새 비밀번호 (6자 이상)" value={newPassword} onChange={e=>setNewPassword(e.target.value)} style={INP}/>
+            <input type="password" placeholder="새 비밀번호 확인" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} style={INP}/>
+          </div>
+          <button onClick={changePassword} disabled={saving} style={{marginTop:10,width:"100%",padding:"11px",borderRadius:12,border:"none",background:P.accent4,color:P.text,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+            {saving?"변경 중...":"비밀번호 변경"}
+          </button>
+        </div>
+
+        {error&&<div style={{fontSize:12,color:P.danger,padding:"8px 12px",background:P.danger+"15",borderRadius:10,marginTop:10}}>{error}</div>}
+        {msg&&<div style={{fontSize:12,color:P.success,padding:"8px 12px",background:P.success+"15",borderRadius:10,marginTop:10}}>{msg}</div>}
+
+        <button onClick={onClose} style={{marginTop:16,width:"100%",padding:13,borderRadius:14,border:`1.5px solid ${P.border}`,background:P.bg,color:P.muted,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>닫기</button>
+      </div>
+    </div>
+  );
+}
+
 // ── CLIENT DIARY ──────────────────────────────────────────────────
-function ClientDiary({profile,onLogout}){
+function ClientDiary({profile,onLogout,onProfileUpdate}){
   const[allData,setAllData]=useState({});
   const[selDate,setSelDate]=useState(todayStr());
-  const[tab,setTab]=useState("emotion");
+  const[tab,setTab]=useState("calendar");
   const[saved,setSaved]=useState(false);
   const[saving,setSaving]=useState(false);
   const[loading,setLoading]=useState(true);
   const[skillModal,setSkillModal]=useState(null);
   const[crisisOpen,setCrisisOpen]=useState(false);
   const[statsRange,setStatsRange]=useState("week");
+  const[myPageOpen,setMyPageOpen]=useState(false);
   const saveTimer=useRef(null);
 
   useEffect(()=>{
-    supabase.from("diary_entries").select("*").eq("user_id",profile.id).order("date",{ascending:false}).limit(60)
+    supabase.from("diary_entries").select("*").eq("user_id",profile.id).order("date",{ascending:false}).limit(90)
       .then(({data})=>{const m={};(data||[]).forEach(e=>{m[e.date]=e;});setAllData(m);setLoading(false);});
   },[]);
 
@@ -326,13 +472,14 @@ function ClientDiary({profile,onLogout}){
       const avg=emos.length?(emos.reduce((a,b)=>a+b,0)/emos.length).toFixed(1):0;
       rows.push([d,avg,(e.skills||[]).join("|"),Math.max(0,...Object.values(e.impulses||{}).map(Number)),e.goals?.medication?"O":"X",e.goals?.sleep||"",e.goals?.meals||0,`"${(e.note||"").replace(/"/g,'""')}"`]);
     });
-    const blob=new Blob(["\uFEFF"+rows.map(r=>r.join(",")).join("\n")],{type:"text/csv;charset=utf-8;"});
+    const blob=new Blob(["﻿"+rows.map(r=>r.join(",")).join("\n")],{type:"text/csv;charset=utf-8;"});
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="dbt_diary.csv";a.click();
   };
 
-  const tabs=[{id:"emotion",label:"🎭 감정"},{id:"skills",label:"🧠 스킬"},{id:"impulses",label:"⚡ 충동"},{id:"goals",label:"✅ 목표"},{id:"stats",label:"📊 통계"}];
-  const dateList=[todayStr(),...Object.keys(allData).filter(d=>d!==todayStr()).sort((a,b)=>b.localeCompare(a))].slice(0,9);
+  const tabs=[{id:"calendar",label:"📅 달력"},{id:"emotion",label:"🎭 감정"},{id:"skills",label:"🧠 스킬"},{id:"impulses",label:"⚡ 충동"},{id:"goals",label:"✅ 목표"},{id:"stats",label:"📊 통계"}];
   const statsData=buildStats(statsRange==="week"?7:30);
+
+  const handleCalendarSelect=(d)=>{setSelDate(d);setTab("emotion");};
 
   if(loading)return<div style={{minHeight:"100vh",background:P.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,fontFamily:"sans-serif"}}><div style={{fontSize:32}}>🌸</div><Spinner/></div>;
 
@@ -343,7 +490,7 @@ function ClientDiary({profile,onLogout}){
       {/* HEADER */}
       <div style={{background:"linear-gradient(160deg,#fff5f8 0%,#f0f8ff 100%)",borderBottom:`1px solid ${P.border}`,padding:"16px 16px 13px",position:"sticky",top:0,zIndex:20,boxShadow:`0 2px 12px ${P.shadow}`}}>
         <div style={{maxWidth:520,margin:"0 auto"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:11}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div>
               <div style={{fontSize:19,fontWeight:700,color:P.text}}>DBT 다이어리 🌸</div>
               <div style={{fontSize:11,color:P.muted}}>{profile.name} · {selDate===todayStr()?"오늘의 기록":selDate}</div>
@@ -351,18 +498,10 @@ function ClientDiary({profile,onLogout}){
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
               {saving&&<div style={{fontSize:11,color:P.muted}}>저장 중...</div>}
               {saved&&<div style={{background:P.success,color:"#fff",borderRadius:20,padding:"3px 9px",fontSize:11,fontWeight:600}}>저장 ✓</div>}
-              <button onClick={exportCSV} title="CSV" style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.card,fontSize:14,cursor:"pointer"}}>📤</button>
-              <button onClick={onLogout} style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.card,fontSize:14,cursor:"pointer"}}>🚪</button>
+              <IconBtn emoji="👤" onClick={()=>setMyPageOpen(true)} label="마이페이지"/>
+              <IconBtn emoji="📤" onClick={exportCSV} label="CSV 내보내기"/>
+              <IconBtn emoji="🚪" onClick={onLogout} label="로그아웃"/>
             </div>
-          </div>
-          <div style={{display:"flex",gap:7,overflowX:"auto",paddingBottom:2}}>
-            {dateList.map(d=>{
-              const isSel=d===selDate;
-              return<button key={d} onClick={()=>setSelDate(d)} style={{flexShrink:0,padding:"5px 12px",borderRadius:20,border:isSel?`2px solid ${P.accent}`:`1.5px solid ${P.border}`,background:isSel?P.accent+"22":P.card,color:isSel?P.accent:P.muted,fontSize:12,fontWeight:isSel?700:400,cursor:"pointer",position:"relative"}}>
-                {d===todayStr()?"오늘":d.slice(5).replace("-","/")}
-                {allData[d]&&!isSel&&<span style={{position:"absolute",top:2,right:3,width:5,height:5,borderRadius:"50%",background:P.accent2}}/>}
-              </button>;
-            })}
           </div>
         </div>
       </div>
@@ -370,12 +509,24 @@ function ClientDiary({profile,onLogout}){
       {hasCrisis&&<div onClick={()=>setCrisisOpen(true)} style={{background:`linear-gradient(90deg,${P.danger}22,${P.warn}22)`,borderBottom:`2px solid ${P.danger}44`,padding:"9px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:16}}>🆘</span><span style={{fontSize:13,color:P.danger,fontWeight:600}}>위기 충동이 감지됐어요. 위기 대처 가이드 보기 →</span></div>}
 
       <div style={{maxWidth:520,margin:"0 auto",padding:"0 13px"}}>
-        <div style={{display:"flex",gap:3,margin:"13px 0 11px",background:P.card,borderRadius:16,padding:4,border:`1px solid ${P.border}`,boxShadow:`0 1px 6px ${P.shadow}`}}>
-          {tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"8px 2px",borderRadius:11,border:"none",fontSize:11,fontWeight:600,background:tab===t.id?`linear-gradient(135deg,${P.accent},${P.accent2})`:"transparent",color:tab===t.id?"#fff":P.muted,cursor:"pointer",transition:"all 0.2s",fontFamily:"inherit"}}>{t.label}</button>)}
+        <div style={{display:"flex",gap:2,margin:"13px 0 11px",background:P.card,borderRadius:16,padding:4,border:`1px solid ${P.border}`,boxShadow:`0 1px 6px ${P.shadow}`}}>
+          {tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,padding:"7px 1px",borderRadius:11,border:"none",fontSize:10,fontWeight:600,background:tab===t.id?`linear-gradient(135deg,${P.accent},${P.accent2})`:"transparent",color:tab===t.id?"#fff":P.muted,cursor:"pointer",transition:"all 0.2s",fontFamily:"inherit",lineHeight:1.3}}>{t.label}</button>)}
         </div>
+
+        {/* CALENDAR TAB */}
+        {tab==="calendar"&&<>
+          <CalendarView allData={allData} selDate={selDate} onSelectDate={handleCalendarSelect}/>
+          <Card style={{textAlign:"center",padding:"14px 18px"}}>
+            <div style={{fontSize:13,color:P.muted}}>날짜를 클릭하면 해당 날의 감정 기록으로 이동해요</div>
+          </Card>
+        </>}
 
         {/* EMOTION TAB */}
         {tab==="emotion"&&<>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,padding:"0 2px"}}>
+            <div style={{fontSize:13,fontWeight:600,color:P.text}}>{selDate===todayStr()?"오늘":selDate} 기록</div>
+            <button onClick={()=>setTab("calendar")} style={{fontSize:11,color:P.accent,border:"none",background:"transparent",cursor:"pointer",fontFamily:"inherit"}}>📅 달력으로</button>
+          </div>
           <Card>
             <SecTitle title="감정 강도 기록" sub="막대를 클릭해 강도를 기록하세요 (0 = 없음)" emoji="🎭"/>
             {EMOTIONS.map(({name,emoji})=>{
@@ -504,6 +655,9 @@ function ClientDiary({profile,onLogout}){
           <button onClick={()=>setCrisisOpen(false)} style={{width:"100%",padding:13,borderRadius:14,border:"none",background:P.accent,color:"#fff",fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>닫기</button>
         </div>
       </div>}
+
+      {/* MY PAGE MODAL */}
+      {myPageOpen&&<MyPage profile={profile} onClose={()=>setMyPageOpen(false)} onProfileUpdate={onProfileUpdate}/>}
     </div>
   );
 }
@@ -536,5 +690,5 @@ export default function App(){
   if(checking)return<div style={{minHeight:"100vh",background:P.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{fontSize:36}}>🌸</div><Spinner/></div>;
   if(!user||!profile)return<AuthScreen onAuth={(u,p)=>{setUser(u);setProfile(p);}}/>;
   if(profile.role==="therapist")return<TherapistDashboard profile={profile} onLogout={logout}/>;
-  return<ClientDiary profile={profile} onLogout={logout}/>;
+  return<ClientDiary profile={profile} onLogout={logout} onProfileUpdate={setProfile}/>;
 }
