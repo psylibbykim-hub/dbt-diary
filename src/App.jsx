@@ -329,6 +329,7 @@ function CalendarView({allData,selDate,onSelectDate}){
 function MyPage({profile,onClose,onProfileUpdate}){
   const[therapists,setTherapists]=useState([]);
   const[therapistsLoading,setTherapistsLoading]=useState(true);
+  const[retryKey,setRetryKey]=useState(0);
   const[currentTherapistInfo,setCurrentTherapistInfo]=useState(null);
   const[therapistInfoReady,setTherapistInfoReady]=useState(!profile.therapist_id);
   const[therapistId,setTherapistId]=useState(profile.therapist_id||"");
@@ -342,25 +343,26 @@ function MyPage({profile,onClose,onProfileUpdate}){
 
   useEffect(()=>{
     let cancelled=false;
-    // 현재 치료자 정보 조회 (3초 타임아웃)
-    if(profile.therapist_id){
-      const infoTimer=setTimeout(()=>{if(!cancelled)setTherapistInfoReady(true);},3000);
+    // 현재 치료자 정보 조회 (6초 타임아웃)
+    if(profile.therapist_id&&!therapistInfoReady){
+      const infoTimer=setTimeout(()=>{if(!cancelled)setTherapistInfoReady(true);},6000);
       supabase.from("profiles").select("id,name,email").eq("id",profile.therapist_id).single()
         .then(({data})=>{if(!cancelled){if(data)setCurrentTherapistInfo(data);clearTimeout(infoTimer);setTherapistInfoReady(true);}})
         .catch(()=>{if(!cancelled){clearTimeout(infoTimer);setTherapistInfoReady(true);}});
     }
-    // 치료자 목록 조회 (3초 타임아웃)
-    const fallback=setTimeout(()=>{if(!cancelled)setTherapistsLoading(false);},3000);
-    (async()=>{
-      try{
-        const{data,error:e}=await supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name");
-        if(!cancelled){setTherapists(e?[]:(data||[]));setTherapistsLoading(false);clearTimeout(fallback);}
-      }catch{
-        if(!cancelled){setTherapists([]);setTherapistsLoading(false);clearTimeout(fallback);}
-      }
-    })();
+    // 치료자 목록 조회 (8초 타임아웃)
+    setTherapistsLoading(true);
+    let resolved=false;
+    const fallback=setTimeout(()=>{if(!cancelled&&!resolved){resolved=true;setTherapistsLoading(false);}},8000);
+    supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name")
+      .then(({data,error:e})=>{
+        if(!cancelled&&!resolved){resolved=true;clearTimeout(fallback);setTherapists(e?[]:(data||[]));setTherapistsLoading(false);}
+      })
+      .catch(()=>{
+        if(!cancelled&&!resolved){resolved=true;clearTimeout(fallback);setTherapists([]);setTherapistsLoading(false);}
+      });
     return()=>{cancelled=true;clearTimeout(fallback);};
-  },[]);
+  },[retryKey]);
 
   const saveTherapist=async()=>{
     setSavingTherapist(true);setMsg("");setError("");
@@ -432,17 +434,22 @@ function MyPage({profile,onClose,onProfileUpdate}){
           }
 
           {/* 치료자 변경/추가 */}
-          <div style={{fontSize:12,color:P.muted,marginBottom:8}}>{profile.therapist_id?"치료자 변경":"치료자 추가"}</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+            <div style={{fontSize:12,color:P.muted}}>{profile.therapist_id?"치료자 변경":"치료자 추가"}</div>
+            {!therapistsLoading&&<button onClick={()=>{setRetryKey(k=>k+1);}} style={{fontSize:11,color:P.accent,background:"none",border:"none",cursor:"pointer",padding:"2px 6px",borderRadius:6}}>↻ 다시 불러오기</button>}
+          </div>
           {therapistsLoading
-            ?<div style={{fontSize:13,color:P.muted,padding:"10px 0"}}>목록 불러오는 중...</div>
+            ?<div style={{fontSize:13,color:P.muted,padding:"10px 0",display:"flex",alignItems:"center",gap:8}}><Spinner/>목록 불러오는 중...</div>
             :therapists.length>0
               ?<select value={therapistId} onChange={e=>setTherapistId(e.target.value)} style={SELECT_STYLE}>
                 <option value="">치료자 선택 안함</option>
                 {therapists.map(t=><option key={t.id} value={t.id}>{t.name} ({t.email})</option>)}
               </select>
               :<div style={{display:"flex",flexDirection:"column",gap:6}}>
-                <input placeholder="치료자 이메일로 연결" value={therapistEmail} onChange={e=>setTherapistEmail(e.target.value)} style={INP}/>
-                <div style={{fontSize:11,color:P.muted}}>치료자가 먼저 가입해야 목록에 표시돼요.</div>
+                <div style={{fontSize:12,color:P.muted,padding:"8px 12px",background:P.bg,borderRadius:10,border:`1px dashed ${P.border}`}}>
+                  목록을 불러올 수 없어요. 이메일로 직접 연결하거나 ↻ 다시 불러오기를 눌러주세요.
+                </div>
+                <input placeholder="치료자 이메일 입력" value={therapistEmail} onChange={e=>setTherapistEmail(e.target.value)} style={INP}/>
               </div>
           }
           <button onClick={saveTherapist} disabled={savingTherapist} style={{marginTop:10,width:"100%",padding:"11px",borderRadius:12,border:"none",background:P.accent2,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
