@@ -330,24 +330,27 @@ function MyPage({profile,onClose,onProfileUpdate}){
   const[therapists,setTherapists]=useState([]);
   const[therapistsLoading,setTherapistsLoading]=useState(true);
   const[currentTherapistInfo,setCurrentTherapistInfo]=useState(null);
+  const[therapistInfoReady,setTherapistInfoReady]=useState(!profile.therapist_id);
   const[therapistId,setTherapistId]=useState(profile.therapist_id||"");
   const[therapistEmail,setTherapistEmail]=useState("");
   const[newPassword,setNewPassword]=useState("");
   const[confirmPassword,setConfirmPassword]=useState("");
-  const[saving,setSaving]=useState(false);
+  const[savingTherapist,setSavingTherapist]=useState(false);
+  const[savingPw,setSavingPw]=useState(false);
   const[msg,setMsg]=useState("");
   const[error,setError]=useState("");
 
   useEffect(()=>{
     let cancelled=false;
-    // 현재 치료자 개별 조회
+    // 현재 치료자 정보 조회 (3초 타임아웃)
     if(profile.therapist_id){
+      const infoTimer=setTimeout(()=>{if(!cancelled)setTherapistInfoReady(true);},3000);
       supabase.from("profiles").select("id,name,email").eq("id",profile.therapist_id).single()
-        .then(({data})=>{if(data&&!cancelled)setCurrentTherapistInfo(data);})
-        .catch(()=>{});
+        .then(({data})=>{if(!cancelled){if(data)setCurrentTherapistInfo(data);clearTimeout(infoTimer);setTherapistInfoReady(true);}})
+        .catch(()=>{if(!cancelled){clearTimeout(infoTimer);setTherapistInfoReady(true);}});
     }
-    // 치료자 목록 조회 — 4초 후 무조건 로딩 종료
-    const fallback=setTimeout(()=>{if(!cancelled)setTherapistsLoading(false);},4000);
+    // 치료자 목록 조회 (3초 타임아웃)
+    const fallback=setTimeout(()=>{if(!cancelled)setTherapistsLoading(false);},3000);
     (async()=>{
       try{
         const{data,error:e}=await supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name");
@@ -360,12 +363,12 @@ function MyPage({profile,onClose,onProfileUpdate}){
   },[]);
 
   const saveTherapist=async()=>{
-    setSaving(true);setMsg("");setError("");
+    setSavingTherapist(true);setMsg("");setError("");
     let resolvedId=therapistId||null;
     if(!resolvedId&&therapistEmail){
       const{data:th}=await supabase.from("profiles").select("id").eq("email",therapistEmail).eq("role","therapist").single();
       if(th)resolvedId=th.id;
-      else{setError("해당 이메일의 치료자를 찾을 수 없어요.");setSaving(false);return;}
+      else{setError("해당 이메일의 치료자를 찾을 수 없어요.");setSavingTherapist(false);return;}
     }
     const{error:e}=await supabase.from("profiles").update({therapist_id:resolvedId}).eq("id",profile.id);
     if(e){setError(e.message);}
@@ -376,21 +379,29 @@ function MyPage({profile,onClose,onProfileUpdate}){
       setTherapistEmail("");
       onProfileUpdate({...profile,therapist_id:resolvedId});
     }
-    setSaving(false);
+    setSavingTherapist(false);
   };
 
   const changePassword=async()=>{
     setMsg("");setError("");
     if(newPassword.length<6){setError("비밀번호는 6자 이상이어야 해요.");return;}
     if(newPassword!==confirmPassword){setError("비밀번호가 일치하지 않아요.");return;}
-    setSaving(true);
-    const{error:e}=await supabase.auth.updateUser({password:newPassword});
-    if(e)setError(e.message);
-    else{setMsg("비밀번호가 변경됐어요.");setNewPassword("");setConfirmPassword("");}
-    setSaving(false);
+    setSavingPw(true);
+    let done=false;
+    const timer=setTimeout(()=>{
+      if(!done){done=true;setError("요청 시간이 초과됐어요. 다시 시도해주세요.");setSavingPw(false);}
+    },10000);
+    try{
+      const{error:e}=await supabase.auth.updateUser({password:newPassword});
+      if(!done){done=true;clearTimeout(timer);
+        if(e)setError(e.message);
+        else{setMsg("비밀번호가 변경됐어요. ✓");setNewPassword("");setConfirmPassword("");}
+        setSavingPw(false);
+      }
+    }catch{
+      if(!done){done=true;clearTimeout(timer);setError("오류가 발생했어요. 다시 시도해주세요.");setSavingPw(false);}
+    }
   };
-
-  const displayTherapist=therapists.find(t=>t.id===therapistId)||currentTherapistInfo;
 
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
@@ -408,8 +419,12 @@ function MyPage({profile,onClose,onProfileUpdate}){
             ?<div style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",background:`linear-gradient(135deg,${P.accent2}22,${P.accent3}22)`,borderRadius:14,border:`1.5px solid ${P.accent2}`,marginBottom:14}}>
               <div style={{fontSize:24}}>👩‍⚕️</div>
               <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:700,color:P.text}}>{currentTherapistInfo?.name||"치료자 연결됨"}</div>
-                <div style={{fontSize:11,color:P.muted}}>{currentTherapistInfo?.email||"이름을 불러오는 중..."}</div>
+                <div style={{fontSize:13,fontWeight:700,color:P.text}}>
+                  {therapistInfoReady?(currentTherapistInfo?.name||"치료자 연결됨"):"불러오는 중..."}
+                </div>
+                <div style={{fontSize:11,color:P.muted}}>
+                  {therapistInfoReady?(currentTherapistInfo?.email||""):""}
+                </div>
               </div>
               <button onClick={()=>{setTherapistId("");}} title="연결 해제" style={{width:28,height:28,borderRadius:8,border:`1px solid ${P.border}`,background:P.card,fontSize:13,cursor:"pointer",color:P.muted,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
             </div>
@@ -430,8 +445,8 @@ function MyPage({profile,onClose,onProfileUpdate}){
                 <div style={{fontSize:11,color:P.muted}}>치료자가 먼저 가입해야 목록에 표시돼요.</div>
               </div>
           }
-          <button onClick={saveTherapist} disabled={saving} style={{marginTop:10,width:"100%",padding:"11px",borderRadius:12,border:"none",background:P.accent2,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
-            {saving?"저장 중...":"저장"}
+          <button onClick={saveTherapist} disabled={savingTherapist} style={{marginTop:10,width:"100%",padding:"11px",borderRadius:12,border:"none",background:P.accent2,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+            {savingTherapist?"저장 중...":"저장"}
           </button>
         </div>
 
@@ -444,8 +459,8 @@ function MyPage({profile,onClose,onProfileUpdate}){
             <input type="password" placeholder="새 비밀번호 (6자 이상)" value={newPassword} onChange={e=>setNewPassword(e.target.value)} style={INP}/>
             <input type="password" placeholder="새 비밀번호 확인" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} style={INP}/>
           </div>
-          <button onClick={changePassword} disabled={saving} style={{marginTop:10,width:"100%",padding:"11px",borderRadius:12,border:"none",background:P.accent4,color:P.text,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
-            {saving?"변경 중...":"비밀번호 변경"}
+          <button onClick={changePassword} disabled={savingPw} style={{marginTop:10,width:"100%",padding:"11px",borderRadius:12,border:"none",background:P.accent4,color:P.text,fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+            {savingPw?"변경 중...":"비밀번호 변경"}
           </button>
         </div>
 
