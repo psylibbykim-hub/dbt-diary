@@ -47,13 +47,23 @@ function Pill({label,active,color,onClick}){return<button onClick={onClick} styl
 function Spinner(){return<div style={{width:24,height:24,border:`3px solid ${P.border}`,borderTopColor:P.accent,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>}
 function IconBtn({emoji,onClick,label}){return<button onClick={onClick} title={label} style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.card,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{emoji}</button>}
 
-// 프로필 조회 (8초 타임아웃)
+// 프로필 조회 (4초 타임아웃)
 function fetchProfile(userId){
   return new Promise((resolve)=>{
-    const timer=setTimeout(()=>resolve(null),8000);
+    const timer=setTimeout(()=>resolve(null),4000);
     supabase.from("profiles").select("*").eq("id",userId).single()
       .then(({data})=>{clearTimeout(timer);resolve(data||null);})
       .catch(()=>{clearTimeout(timer);resolve(null);});
+  });
+}
+
+// 세션 조회 (3초 타임아웃)
+function getSessionSafe(){
+  return new Promise((resolve)=>{
+    const timer=setTimeout(()=>resolve({data:{session:null}}),3000);
+    supabase.auth.getSession()
+      .then(r=>{clearTimeout(timer);resolve(r);})
+      .catch(()=>{clearTimeout(timer);resolve({data:{session:null}});});
   });
 }
 
@@ -747,16 +757,21 @@ export default function App(){
   const[checking,setChecking]=useState(true);
 
   useEffect(()=>{
-    let done=false;
-    const fallback=setTimeout(()=>{if(!done){done=true;setChecking(false);}},10000);
-    supabase.auth.getSession().then(async({data:{session}})=>{
+    let settled=false;
+    const settle=(u,p)=>{if(!settled){settled=true;setUser(u);setProfile(p);setChecking(false);}};
+    // 최대 6초 보장 fallback
+    const fallback=setTimeout(()=>settle(null,null),6000);
+    // 세션 확인 → 프로필 조회 (최대 3+4=7초, fallback이 6초에 먼저 처리)
+    (async()=>{
+      const{data:{session}}=await getSessionSafe();
       if(session?.user){
         const p=await fetchProfile(session.user.id);
-        setUser(session.user);setProfile(p);
-      }
-      if(!done){done=true;clearTimeout(fallback);setChecking(false);}
-    }).catch(()=>{if(!done){done=true;clearTimeout(fallback);setChecking(false);}});
+        clearTimeout(fallback);settle(session.user,p);
+      }else{clearTimeout(fallback);settle(null,null);}
+    })();
+    // 로그인/로그아웃 이벤트 처리 (INITIAL_SESSION은 위에서 처리)
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
+      if(event==="INITIAL_SESSION")return;
       if(session?.user){
         const p=await fetchProfile(session.user.id);
         setUser(session.user);setProfile(p);
