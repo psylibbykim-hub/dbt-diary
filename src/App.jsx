@@ -16,9 +16,9 @@ const P = {
 const EMOTIONS=[{name:"기쁨",emoji:"😊"},{name:"슬픔",emoji:"😢"},{name:"분노",emoji:"😠"},{name:"불안",emoji:"😰"},{name:"수치심",emoji:"😳"},{name:"죄책감",emoji:"😞"},{name:"두려움",emoji:"😨"},{name:"사랑",emoji:"🥰"}];
 const DBT_SKILLS=[
   {category:"마음챙김",emoji:"🧘",color:"#a8d8ea",skills:[{name:"관찰하기",desc:"판단 없이 현재 순간을 있는 그대로 바라보세요."},{name:"묘사하기",desc:"경험을 말로 표현하되 해석을 붙이지 마세요."},{name:"참여하기",desc:"현재 활동에 완전히 몰입하세요."},{name:"비판단적으로",desc:"자신과 타인을 판단하지 않는 태도를 연습하세요."},{name:"한 가지에 집중",desc:"한 번에 하나의 일에만 집중하세요."},{name:"효과적으로",desc:"상황에서 실제로 효과 있는 방법을 선택하세요."}]},
-  {category:"고통 감내",emoji:"🛡️",color:"#f4a7b9",skills:[{name:"TIPP",desc:"체온, 격렬한 운동, 호흡 조절, 이완으로 강렬한 감정을 빠르게 낮춥니다."},{name:"ACCEPTS",desc:"활동, 기여, 비교, 감정, 밀어내기, 생각, 감각으로 주의를 전환합니다."},{name:"Self-Soothe",desc:"5가지 감각을 활용해 자신을 달래세요."},{name:"IMPROVE",desc:"심상, 의미, 기도, 이완, 한 가지, 휴식, 격려를 활용합니다."},{name:"장단점 분석",desc:"충동에 따르거나 참는 것의 장단점을 적어보세요."},{name:"근본 수용",desc:"현실을 바꿀 수 없을 때 저항 대신 받아들이세요."}]},
-  {category:"감정 조절",emoji:"💜",color:"#d4b8e0",skills:[{name:"감정 확인",desc:"지금 감정의 이름, 원인, 신체 반응, 행동 충동을 파악합니다."},{name:"반대 행동",desc:"감정이 이끄는 충동과 반대되는 행동을 해보세요."},{name:"즐거운 활동",desc:"기분 좋은 활동 목록을 만들고 매일 하나씩 실천하세요."},{name:"PLEASE 스킬",desc:"신체건강, 식사, 수면, 운동, 음주/약물 피하기로 감정 취약성을 줄입니다."},{name:"감사 목록",desc:"매일 감사한 것 3가지를 적으며 긍정적 감정을 쌓습니다."},{name:"걱정 줄이기",desc:"걱정 시간을 정해두고 그 외 시간엔 걱정을 미루는 연습을 합니다."}]},
-  {category:"대인관계",emoji:"🤝",color:"#b8e0c8",skills:[{name:"DEAR MAN",desc:"묘사, 표현, 주장, 강화, 마음챙김, 자신감, 협상으로 원하는 것을 요청합니다."},{name:"GIVE",desc:"부드럽게, 관심, 검증, 쉽게로 관계를 유지합니다."},{name:"FAST",desc:"공정하게, 사과 줄이기, 가치 고수, 정직하게로 자존감을 지킵니다."},{name:"관계 마음챙김",desc:"상대방에게 온전히 집중하며 판단 없이 경청합니다."},{name:"관계 평가",desc:"이 관계가 나에게 어떤 영향을 미치는지 정기적으로 점검합니다."},{name:"자기존중",desc:"자신의 필요와 감정을 타인만큼 소중히 여기는 연습을 합니다."}]},
+  {category:"고통 감내",emoji:"🛡️",color:"#f4a7b9",skills:[{name:"TIPP",desc:"체온, 격렬한 운동, 호흡 조절, 이완으로 강렬한 감정을 빠르게 낮춥니다."},{name:"ACCEPTS",desc:"활동, 기여, 비교, 감정, 밀어내기, 생각, 감각으로 주의를 전환합니다."},{name:"Self-Soothe",desc:"5가지 감각을 활용해 자신을 달래세요."},{name:"IMPROVE",desc:"심상, 의미, 기도, 이완, 한 가지, 휴식, 격려를 활용합니다."},{name:"장단점 분석",desc:"충동에 따르거나 참는 것의 장단점을 적어보세요."},{name:"철저한 수용",desc:"현실을 바꿀 수 없을 때 저항 대신 받아들이세요."}]},
+  {category:"감정 조절",emoji:"💜",color:"#d4b8e0",skills:[{name:"감정 확인",desc:"지금 감정의 이름, 원인, 신체 반응, 행동 충동을 파악합니다."},{name:"반대로 행동",desc:"감정이 이끄는 충동과 반대되는 행동을 해보세요."},{name:"즐거운 활동",desc:"기분 좋은 활동 목록을 만들고 매일 하나씩 실천하세요."},{name:"PLEASE 스킬",desc:"신체건강, 식사, 수면, 운동, 음주/약물 피하기로 감정 취약성을 줄입니다."},{name:"감사 목록",desc:"매일 감사한 것 3가지를 적으며 긍정적 감정을 쌓습니다."}]},
+  {category:"대인관계",emoji:"🤝",color:"#b8e0c8",skills:[{name:"DEAR MAN",desc:"묘사, 표현, 주장, 강화, 마음챙김, 자신감, 협상으로 원하는 것을 요청합니다."},{name:"GIVE",desc:"부드럽게, 관심, 검증, 쉽게로 관계를 유지합니다."},{name:"FAST",desc:"공정하게, 사과 줄이기, 가치 고수, 정직하게로 자존감을 지킵니다."},{name:"관계 마음챙김",desc:"상대방에게 온전히 집중하며 판단 없이 경청합니다."},{name:"관계 평가하기",desc:"이 관계가 나에게 어떤 영향을 미치는지 정기적으로 점검합니다."},{name:"스스로 존중하기",desc:"자신의 필요와 감정을 타인만큼 소중히 여기는 연습을 합니다."}]},
 ];
 const IMPULSES=[{name:"자해 충동",emoji:"🔴",crisis:true},{name:"자살 충동",emoji:"🆘",crisis:true},{name:"물질 사용 충동",emoji:"🟠",crisis:false},{name:"폭식/제한 충동",emoji:"🟡",crisis:false},{name:"격리 충동",emoji:"🔵",crisis:false},{name:"공격 충동",emoji:"🟣",crisis:false}];
 const CRISIS_GUIDE=[
@@ -74,7 +74,7 @@ function AuthScreen({onAuth}){
           if(th)therapistId=th.id;
         }
         await supabase.from("profiles").insert({id:data.user.id,email,name,role,therapist_id:therapistId});
-        setMsg("가입 완료! 이메일 인증 후 로그인해주세요.");setMode("login");
+        setMsg("가입 완료! 로그인해주세요.");setMode("login");
       }
     }catch(e){setError(e.message||"오류가 발생했어요.");}
     setLoading(false);
