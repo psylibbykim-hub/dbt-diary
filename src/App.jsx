@@ -197,7 +197,23 @@ function TherapistDashboard({profile,onLogout}){
 
   const entry=selected?(entries[selDate]||emptyEntry()):null;
   const dateList=selected?[todayStr(),...Object.keys(entries).filter(d=>d!==todayStr()).sort((a,b)=>b.localeCompare(a))].slice(0,10):[];
-  const maxImp=entry?Math.max(0,...Object.values(entry.impulses||{}).map(Number)):0;
+  const maxImp=entry?Math.max(0,...Object.entries(entry.impulses||{}).filter(([k])=>k!=='_acts').map(([,v])=>Number(v))):0;
+
+  const exportClientCSV=()=>{
+    if(!selected||Object.keys(entries).length===0)return;
+    const acts=e=>e.impulses?._acts||{};
+    const rows=[["날짜","감정평균","사용스킬","최고충동","자해","물질사용","폭식","자살시도","처방약","수면","식사","메모"]];
+    Object.keys(entries).sort().forEach(d=>{
+      const e=entries[d];
+      const emos=Object.values(e.emotions||{});
+      const avg=emos.length?(emos.reduce((a,b)=>a+b,0)/emos.length).toFixed(1):0;
+      const iV=Object.entries(e.impulses||{}).filter(([k])=>k!=='_acts').map(([,v])=>Number(v));
+      const a=acts(e);
+      rows.push([d,avg,(e.skills||[]).join("|"),Math.max(0,...iV),a.selfharm?"O":"X",a.substance?"O":"X",a.binge?"O":"X",a.suicide?"O":"X",e.goals?.medication?"O":"X",e.goals?.sleep||"",e.goals?.meals||0,`"${(e.note||"").replace(/"/g,'""')}"`]);
+    });
+    const blob=new Blob(["﻿"+rows.map(r=>r.join(",")).join("\n")],{type:"text/csv;charset=utf-8;"});
+    const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`dbt_${selected.name}_diary.csv`;a.click();
+  };
 
   return(
     <div style={{minHeight:"100vh",background:P.bg,fontFamily:"'DM Sans',sans-serif",paddingBottom:40}}>
@@ -230,7 +246,10 @@ function TherapistDashboard({profile,onLogout}){
             <Card style={{textAlign:"center",padding:40}}><div style={{fontSize:30,marginBottom:10}}>👈</div><div style={{fontSize:14,color:P.muted}}>내담자를 선택하세요</div></Card>
           ):(
             <>
-              <div style={{fontSize:15,fontWeight:700,color:P.text,marginBottom:10}}>📔 {selected.name}님의 다이어리</div>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                <div style={{fontSize:15,fontWeight:700,color:P.text}}>📔 {selected.name}님의 다이어리</div>
+                <button onClick={exportClientCSV} disabled={Object.keys(entries).length===0} style={{padding:"6px 12px",borderRadius:10,border:`1.5px solid ${P.accent2}`,background:P.card,color:P.accent2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>⬇️ CSV</button>
+              </div>
               <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:14,paddingBottom:2}}>
                 {dateList.map(d=>{
                   const isSel=d===selDate;
@@ -557,12 +576,13 @@ function ClientDiary({profile,onLogout,onProfileUpdate}){
   });
 
   const exportCSV=()=>{
-    const rows=[["날짜","감정평균","사용스킬","최고충동","약복용","수면","식사","메모"]];
+    const rows=[["날짜","감정평균","사용스킬","최고충동","자해","물질사용","폭식","자살시도","처방약","수면","식사","메모"]];
     Object.keys(allData).sort().forEach(d=>{
       const e=allData[d];const emos=Object.values(e.emotions||{});
       const avg=emos.length?(emos.reduce((a,b)=>a+b,0)/emos.length).toFixed(1):0;
       const iV=Object.entries(e.impulses||{}).filter(([k])=>k!=='_acts').map(([,v])=>Number(v));
-      rows.push([d,avg,(e.skills||[]).join("|"),Math.max(0,...iV),e.goals?.medication?"O":"X",e.goals?.sleep||"",e.goals?.meals||0,`"${(e.note||"").replace(/"/g,'""')}"`]);
+      const a=e.impulses?._acts||{};
+      rows.push([d,avg,(e.skills||[]).join("|"),Math.max(0,...iV),a.selfharm?"O":"X",a.substance?"O":"X",a.binge?"O":"X",a.suicide?"O":"X",e.goals?.medication?"O":"X",e.goals?.sleep||"",e.goals?.meals||0,`"${(e.note||"").replace(/"/g,'""')}"`]);
     });
     const blob=new Blob(["﻿"+rows.map(r=>r.join(",")).join("\n")],{type:"text/csv;charset=utf-8;"});
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="dbt_diary.csv";a.click();
