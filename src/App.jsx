@@ -19,15 +19,15 @@ const SELECT_STYLE={...INP,appearance:"none",backgroundImage:`url("data:image/sv
 const EMOTIONS=[{name:"기쁨",emoji:"😊"},{name:"슬픔",emoji:"😢"},{name:"분노",emoji:"😠"},{name:"불안",emoji:"😰"},{name:"수치심",emoji:"😳"},{name:"죄책감",emoji:"😞"},{name:"두려움",emoji:"😨"},{name:"사랑",emoji:"🥰"}];
 const DBT_SKILLS=[
   {category:"마음챙김",emoji:"🧘",color:"#a8d8ea",skills:[{name:"관찰하기",desc:"판단 없이 현재 순간을 있는 그대로 바라보세요."},{name:"묘사하기",desc:"경험을 말로 표현하되 해석을 붙이지 마세요."},{name:"참여하기",desc:"현재 활동에 완전히 몰입하세요."},{name:"비판단적으로",desc:"자신과 타인을 판단하지 않는 태도를 연습하세요."},{name:"한 가지에 집중",desc:"한 번에 하나의 일에만 집중하세요."},{name:"효과적으로",desc:"상황에서 실제로 효과 있는 방법을 선택하세요."}]},
-  {category:"고통 감내",emoji:"🛡️",color:"#f4a7b9",skills:[{name:"TIPP",desc:"체온, 격렬한 운동, 호흡 조절, 이완으로 강렬한 감정을 빠르게 낮춥니다."},{name:"ACCEPTS",desc:"활동, 기여, 비교, 감정, 밀어내기, 생각, 감각으로 주의를 전환합니다."},{name:"Self-Soothe",desc:"5가지 감각을 활용해 자신을 달래세요."},{name:"IMPROVE",desc:"심상, 의미, 기도, 이완, 한 가지, 휴식, 격려를 활용합니다."},{name:"장단점 분석",desc:"충동에 따르거나 참는 것의 장단점을 적어보세요."},{name:"근본 수용",desc:"현실을 바꿀 수 없을 때 저항 대신 받아들이세요."}]},
-  {category:"감정 조절",emoji:"💜",color:"#d4b8e0",skills:[{name:"감정 확인",desc:"지금 감정의 이름, 원인, 신체 반응, 행동 충동을 파악합니다."},{name:"반대 행동",desc:"감정이 이끄는 충동과 반대되는 행동을 해보세요."},{name:"즐거운 활동",desc:"기분 좋은 활동 목록을 만들고 매일 하나씩 실천하세요."},{name:"PLEASE 스킬",desc:"신체건강, 식사, 수면, 운동, 음주/약물 피하기로 감정 취약성을 줄입니다."},{name:"감사 목록",desc:"매일 감사한 것 3가지를 적으며 긍정적 감정을 쌓습니다."},{name:"걱정 줄이기",desc:"걱정 시간을 정해두고 그 외 시간엔 걱정을 미루는 연습을 합니다."}]},
-  {category:"대인관계",emoji:"🤝",color:"#b8e0c8",skills:[{name:"DEAR MAN",desc:"묘사, 표현, 주장, 강화, 마음챙김, 자신감, 협상으로 원하는 것을 요청합니다."},{name:"GIVE",desc:"부드럽게, 관심, 검증, 쉽게로 관계를 유지합니다."},{name:"FAST",desc:"공정하게, 사과 줄이기, 가치 고수, 정직하게로 자존감을 지킵니다."},{name:"관계 마음챙김",desc:"상대방에게 온전히 집중하며 판단 없이 경청합니다."},{name:"관계 평가",desc:"이 관계가 나에게 어떤 영향을 미치는지 정기적으로 점검합니다."},{name:"자기존중",desc:"자신의 필요와 감정을 타인만큼 소중히 여기는 연습을 합니다."}]},
+  {category:"고통 감내",emoji:"🛡️",color:"#f4a7b9",skills:[{name:"TIPP",desc:"체온, 격렬한 운동, 호흡 조절, 이완으로 강렬한 감정을 빠르게 낮춥니다."},{name:"ACCEPTS",desc:"활동, 기여, 비교, 감정, 밀어내기, 생각, 감각으로 주의를 전환합니다."},{name:"자기위안",desc:"5가지 감각을 활용해 자신을 달래세요."},{name:"IMPROVE",desc:"심상, 의미, 기도, 이완, 한 가지, 휴식, 격려를 활용합니다."},{name:"장단점 분석",desc:"충동에 따르거나 참는 것의 장단점을 적어보세요."},{name:"철저한 수용",desc:"현실을 바꿀 수 없을 때 저항 대신 받아들이세요."}]},
+  {category:"감정 조절",emoji:"💜",color:"#d4b8e0",skills:[{name:"감정 확인",desc:"지금 감정의 이름, 원인, 신체 반응, 행동 충동을 파악합니다."},{name:"반대 행동",desc:"감정이 이끄는 충동과 반대되는 행동을 해보세요."},{name:"즐거운 활동",desc:"기분 좋은 활동 목록을 만들고 매일 하나씩 실천하세요."},{name:"PLEASE 스킬",desc:"신체건강, 식사, 수면, 운동, 음주/약물 피하기로 감정 취약성을 줄입니다."}]},
+  {category:"대인관계",emoji:"🤝",color:"#b8e0c8",skills:[{name:"DEAR MAN",desc:"묘사, 표현, 주장, 강화, 마음챙김, 자신감, 협상으로 원하는 것을 요청합니다."},{name:"GIVE",desc:"부드럽게, 관심, 검증, 쉽게로 관계를 유지합니다."},{name:"FAST",desc:"공정하게, 사과 줄이기, 가치 고수, 정직하게로 자존감을 지킵니다."},{name:"관계 마음챙김",desc:"상대방에게 온전히 집중하며 판단 없이 경청합니다."},{name:"관계 평가하기",desc:"이 관계가 나에게 어떤 영향을 미치는지 정기적으로 점검합니다."},{name:"자기존중",desc:"자신의 필요와 감정을 타인만큼 소중히 여기는 연습을 합니다."}]},
 ];
 const IMPULSES=[{name:"자해 충동",emoji:"🔴",crisis:true},{name:"자살 충동",emoji:"🆘",crisis:true},{name:"물질 사용 충동",emoji:"🟠",crisis:false},{name:"폭식/제한 충동",emoji:"🟡",crisis:false},{name:"격리 충동",emoji:"🔵",crisis:false},{name:"공격 충동",emoji:"🟣",crisis:false}];
 const CRISIS_GUIDE=[
   {step:"1단계",title:"TIPP 즉시 사용",desc:"찬물로 얼굴 담그기(30초), 또는 달리기/제자리 뛰기(1분).",icon:"🧊"},
   {step:"2단계",title:"안전한 공간으로",desc:"혼자 있지 마세요. 신뢰하는 사람 옆에 있거나 안전한 장소로 이동하세요.",icon:"🏠"},
-  {step:"3단계",title:"근본 수용 시도",desc:"\"지금 이 순간은 힘들지만, 이 감정은 지나간다\"고 스스로에게 말해주세요.",icon:"🌊"},
+  {step:"3단계",title:"철저한 수용 시도",desc:"\"지금 이 순간은 힘들지만, 이 감정은 지나간다\"고 스스로에게 말해주세요.",icon:"🌊"},
   {step:"4단계",title:"장단점 분석",desc:"충동에 따랐을 때의 결과를 떠올려보세요. 장기적으로 나에게 도움이 되나요?",icon:"⚖️"},
   {step:"5단계",title:"전문가에게 연락",desc:"자살예방상담전화 1393 (24시간), 정신건강위기상담 1577-0199",icon:"📞"},
 ];
@@ -272,7 +272,7 @@ function TherapistDashboard({profile,onLogout}){
                     </Card>
                     <Card style={{marginBottom:0}}>
                       <SecTitle title="목표 체크" emoji="✅"/>
-                      {[{k:"medication",label:"💊 약물"},{k:"exercise",label:"🏃 운동"},{k:"therapy",label:"💬 상담"}].map(g=>(
+                      {[{k:"medication",label:"💊 처방약"},{k:"exercise",label:"🏃 운동"},{k:"therapy",label:"💬 상담"}].map(g=>(
                         <div key={g.k} style={{fontSize:12,padding:"4px 0",borderBottom:`1px solid ${P.border}`,display:"flex",justifyContent:"space-between"}}>
                           <span>{g.label}</span><span style={{color:entry.goals?.[g.k]?P.success:P.muted}}>{entry.goals?.[g.k]?"✓":"✗"}</span>
                         </div>
@@ -540,17 +540,20 @@ function ClientDiary({profile,onLogout,onProfileUpdate}){
   const setEmo=(n,v)=>updateEntry({emotions:{...entry.emotions,[n]:v}});
   const toggleSkill=(s)=>updateEntry({skills:entry.skills.includes(s)?entry.skills.filter(x=>x!==s):[...entry.skills,s]});
   const setImp=(n,v)=>updateEntry({impulses:{...entry.impulses,[n]:v}});
+  const setAct=(k,v)=>updateEntry({impulses:{...entry.impulses,_acts:{...(entry.impulses?._acts||{}),[k]:v}}});
   const setGoal=(k,v)=>updateEntry({goals:{...entry.goals,[k]:v}});
 
   const hasCrisis=IMPULSES.filter(i=>i.crisis).some(i=>(entry.impulses?.[i.name]??0)>=6);
-  const maxImp=Math.max(0,...Object.values(entry.impulses||{}).map(Number));
+  const impNums=Object.entries(entry.impulses||{}).filter(([k])=>k!=='_acts').map(([,v])=>Number(v));
+  const maxImp=Math.max(0,...impNums);
 
   const buildStats=(days)=>[...Array(days)].map((_,i)=>{
     const d=new Date();d.setDate(d.getDate()-(days-1-i));
     const ds=d.toISOString().slice(0,10);
     const e=allData[ds]||emptyEntry();
     const emos=Object.values(e.emotions||{});
-    return{date:fmtDate(ds),감정평균:emos.length?Number((emos.reduce((a,b)=>a+b,0)/emos.length).toFixed(1)):0,최고충동:Math.max(0,...Object.values(e.impulses||{}).map(Number)),스킬수:(e.skills||[]).length};
+    const impV=Object.entries(e.impulses||{}).filter(([k])=>k!=='_acts').map(([,v])=>Number(v));
+    return{date:fmtDate(ds),감정평균:emos.length?Number((emos.reduce((a,b)=>a+b,0)/emos.length).toFixed(1)):0,최고충동:Math.max(0,...impV),스킬수:(e.skills||[]).length};
   });
 
   const exportCSV=()=>{
@@ -558,7 +561,8 @@ function ClientDiary({profile,onLogout,onProfileUpdate}){
     Object.keys(allData).sort().forEach(d=>{
       const e=allData[d];const emos=Object.values(e.emotions||{});
       const avg=emos.length?(emos.reduce((a,b)=>a+b,0)/emos.length).toFixed(1):0;
-      rows.push([d,avg,(e.skills||[]).join("|"),Math.max(0,...Object.values(e.impulses||{}).map(Number)),e.goals?.medication?"O":"X",e.goals?.sleep||"",e.goals?.meals||0,`"${(e.note||"").replace(/"/g,'""')}"`]);
+      const iV=Object.entries(e.impulses||{}).filter(([k])=>k!=='_acts').map(([,v])=>Number(v));
+      rows.push([d,avg,(e.skills||[]).join("|"),Math.max(0,...iV),e.goals?.medication?"O":"X",e.goals?.sleep||"",e.goals?.meals||0,`"${(e.note||"").replace(/"/g,'""')}"`]);
     });
     const blob=new Blob(["﻿"+rows.map(r=>r.join(",")).join("\n")],{type:"text/csv;charset=utf-8;"});
     const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="dbt_diary.csv";a.click();
@@ -653,24 +657,38 @@ function ClientDiary({profile,onLogout,onProfileUpdate}){
         </>}
 
         {/* IMPULSES TAB */}
-        {tab==="impulses"&&<Card>
-          <SecTitle title="행동 충동 체크" sub="슬라이더로 강도를 기록하세요" emoji="⚡"/>
-          {IMPULSES.map(imp=>{
-            const val=entry.impulses?.[imp.name]??0;const col=impColor(val);
-            return<div key={imp.name} style={{marginBottom:20}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}><span style={{fontSize:14,fontWeight:500}}>{imp.emoji} {imp.name}</span><span style={{fontSize:13,fontWeight:700,color:col}}>{val} / 10</span></div>
-              <input type="range" min={0} max={10} value={val} onChange={e=>setImp(imp.name,Number(e.target.value))} style={{width:"100%",accentColor:col,background:`linear-gradient(to right,${col} ${val*10}%,${P.border} ${val*10}%)`}}/>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:P.muted,marginTop:2}}><span>없음</span><span>약함</span><span>보통</span><span>강함</span><span>극심</span></div>
-              {val>=7&&<div onClick={()=>setCrisisOpen(true)} style={{marginTop:8,padding:"8px 12px",background:P.danger+"18",borderRadius:10,fontSize:12,color:P.danger,cursor:"pointer"}}>⚠️ 충동이 강합니다. <u>위기 대처 가이드 보기</u></div>}
-            </div>;
-          })}
-        </Card>}
+        {tab==="impulses"&&<>
+          <Card>
+            <SecTitle title="실제 행동 여부" sub="오늘 실제로 있었던 행동에 체크하세요" emoji="✔️"/>
+            {[{k:"selfharm",label:"자해"},{k:"substance",label:"물질 사용"},{k:"binge",label:"폭식"},{k:"suicide",label:"자살 시도"}].map(({k,label})=>{
+              const checked=entry.impulses?._acts?.[k]||false;
+              return<div key={k} onClick={()=>setAct(k,!checked)} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 4px",borderBottom:`1px solid ${P.border}`,cursor:"pointer"}}>
+                <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${checked?P.danger:P.border}`,background:checked?P.danger:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"all 0.15s"}}>
+                  {checked&&<span style={{color:"#fff",fontSize:13,fontWeight:700}}>✓</span>}
+                </div>
+                <span style={{fontSize:14,color:checked?P.danger:P.text,fontWeight:checked?600:400}}>{label}</span>
+              </div>;
+            })}
+          </Card>
+          <Card>
+            <SecTitle title="행동 충동 강도" sub="슬라이더로 강도를 기록하세요" emoji="⚡"/>
+            {IMPULSES.map(imp=>{
+              const val=entry.impulses?.[imp.name]??0;const col=impColor(val);
+              return<div key={imp.name} style={{marginBottom:20}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:7}}><span style={{fontSize:14,fontWeight:500}}>{imp.emoji} {imp.name}</span><span style={{fontSize:13,fontWeight:700,color:col}}>{val} / 10</span></div>
+                <input type="range" min={0} max={10} value={val} onChange={e=>setImp(imp.name,Number(e.target.value))} style={{width:"100%",accentColor:col,background:`linear-gradient(to right,${col} ${val*10}%,${P.border} ${val*10}%)`}}/>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:P.muted,marginTop:2}}><span>없음</span><span>약함</span><span>보통</span><span>강함</span><span>극심</span></div>
+                {val>=7&&<div onClick={()=>setCrisisOpen(true)} style={{marginTop:8,padding:"8px 12px",background:P.danger+"18",borderRadius:10,fontSize:12,color:P.danger,cursor:"pointer"}}>⚠️ 충동이 강합니다. <u>위기 대처 가이드 보기</u></div>}
+              </div>;
+            })}
+          </Card>
+        </>}
 
         {/* GOALS TAB */}
         {tab==="goals"&&<>
           <Card>
             <SecTitle title="오늘의 건강 체크" emoji="💊"/>
-            <CheckRow label="💊 약물 복용" value={entry.goals?.medication} onChange={v=>setGoal("medication",v)}/>
+            <CheckRow label="💊 처방약 복용" value={entry.goals?.medication} onChange={v=>setGoal("medication",v)}/>
             <CheckRow label="🏃 운동" value={entry.goals?.exercise} onChange={v=>setGoal("exercise",v)}/>
             <CheckRow label="💬 치료/상담" value={entry.goals?.therapy} onChange={v=>setGoal("therapy",v)}/>
           </Card>
