@@ -47,6 +47,16 @@ function Pill({label,active,color,onClick}){return<button onClick={onClick} styl
 function Spinner(){return<div style={{width:24,height:24,border:`3px solid ${P.border}`,borderTopColor:P.accent,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>}
 function IconBtn({emoji,onClick,label}){return<button onClick={onClick} title={label} style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.card,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{emoji}</button>}
 
+// 프로필 조회 (8초 타임아웃)
+function fetchProfile(userId){
+  return new Promise((resolve)=>{
+    const timer=setTimeout(()=>resolve(null),8000);
+    supabase.from("profiles").select("*").eq("id",userId).single()
+      .then(({data})=>{clearTimeout(timer);resolve(data||null);})
+      .catch(()=>{clearTimeout(timer);resolve(null);});
+  });
+}
+
 // ── AUTH ──────────────────────────────────────────────────────────
 function AuthScreen({onAuth}){
   const[mode,setMode]=useState("login");
@@ -78,7 +88,8 @@ function AuthScreen({onAuth}){
       if(mode==="login"){
         const{data,error:e}=await supabase.auth.signInWithPassword({email,password});
         if(e)throw e;
-        const{data:p}=await supabase.from("profiles").select("*").eq("id",data.user.id).single();
+        const p=await fetchProfile(data.user.id);
+        if(!p)throw new Error("프로필을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
         onAuth(data.user,p);
       }else{
         if(!name){setError("이름을 입력해주세요.");setLoading(false);return;}
@@ -733,17 +744,17 @@ export default function App(){
 
   useEffect(()=>{
     let done=false;
-    const fallback=setTimeout(()=>{if(!done){done=true;setChecking(false);}},5000);
+    const fallback=setTimeout(()=>{if(!done){done=true;setChecking(false);}},10000);
     supabase.auth.getSession().then(async({data:{session}})=>{
       if(session?.user){
-        const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+        const p=await fetchProfile(session.user.id);
         setUser(session.user);setProfile(p);
       }
       if(!done){done=true;clearTimeout(fallback);setChecking(false);}
     }).catch(()=>{if(!done){done=true;clearTimeout(fallback);setChecking(false);}});
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
       if(session?.user){
-        const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+        const p=await fetchProfile(session.user.id);
         setUser(session.user);setProfile(p);
       }else{setUser(null);setProfile(null);}
     });
@@ -753,7 +764,16 @@ export default function App(){
   const logout=async()=>{await supabase.auth.signOut();setUser(null);setProfile(null);};
 
   if(checking)return<div style={{minHeight:"100vh",background:P.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}><div style={{fontSize:36}}>🌸</div><Spinner/></div>;
-  if(!user||!profile)return<AuthScreen onAuth={(u,p)=>{setUser(u);setProfile(p);}}/>;
+  if(!user)return<AuthScreen onAuth={(u,p)=>{setUser(u);setProfile(p);}}/>;
+  if(!profile)return(
+    <div style={{minHeight:"100vh",background:P.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24,fontFamily:"sans-serif"}}>
+      <div style={{fontSize:36}}>🌸</div>
+      <div style={{fontSize:15,color:P.text,fontWeight:600}}>프로필을 불러오지 못했어요</div>
+      <div style={{fontSize:13,color:P.muted,textAlign:"center"}}>서버 응답이 느리거나 접속 오류가 발생했어요.</div>
+      <button onClick={async()=>{const p=await fetchProfile(user.id);if(p)setProfile(p);}} style={{padding:"11px 24px",borderRadius:14,border:"none",background:P.accent,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>다시 시도</button>
+      <button onClick={logout} style={{padding:"8px 20px",borderRadius:12,border:`1px solid ${P.border}`,background:"none",color:P.muted,fontSize:13,cursor:"pointer"}}>로그아웃</button>
+    </div>
+  );
   if(profile.role==="therapist")return<TherapistDashboard profile={profile} onLogout={logout}/>;
   return<ClientDiary profile={profile} onLogout={logout} onProfileUpdate={setProfile}/>;
 }
