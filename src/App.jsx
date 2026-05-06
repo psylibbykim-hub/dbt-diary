@@ -75,8 +75,12 @@ function AuthScreen({onAuth}){
   useEffect(()=>{
     if(mode==="signup"&&role==="client"){
       setTherapistsLoading(true);
+      setTherapists([]);
+      let done=false;
+      const timer=setTimeout(()=>{if(!done){done=true;setTherapistsLoading(false);}},8000);
       supabase.from("profiles").select("id,name,email").eq("role","therapist").order("name")
-        .then(({data,error:e})=>{setTherapists(e?[]:(data||[]));setTherapistsLoading(false);});
+        .then(({data,error:e})=>{if(!done){done=true;clearTimeout(timer);setTherapists(e?[]:(data||[]));setTherapistsLoading(false);}})
+        .catch(()=>{if(!done){done=true;clearTimeout(timer);setTherapistsLoading(false);}});
     }
   },[mode,role]);
 
