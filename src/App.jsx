@@ -46,6 +46,7 @@ function CheckRow({label,value,onChange}){return<div onClick={()=>onChange(!valu
 function Pill({label,active,color,onClick}){return<button onClick={onClick} style={{padding:"6px 13px",borderRadius:20,fontSize:13,fontWeight:active?600:400,border:active?`2px solid ${color}`:`1.5px solid ${P.border}`,background:active?color+"28":"transparent",color:active?color:P.muted,cursor:"pointer",transition:"all 0.15s",fontFamily:"inherit"}}>{active?"✓ ":""}{label}</button>}
 function Spinner(){return<div style={{width:24,height:24,border:`3px solid ${P.border}`,borderTopColor:P.accent,borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>}
 function IconBtn({emoji,onClick,label}){return<button onClick={onClick} title={label} style={{width:32,height:32,borderRadius:10,border:`1px solid ${P.border}`,background:P.card,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{emoji}</button>}
+function Footer(){return<div style={{textAlign:"center",padding:"20px 0 8px",fontSize:11,color:P.muted,letterSpacing:"0.03em"}}>Stella Kim | CHA University</div>}
 
 // 프로필 조회 (4초 타임아웃)
 function fetchProfile(userId){
@@ -172,6 +173,7 @@ function AuthScreen({onAuth}){
             </button>
           </div>
         </Card>
+        <Footer/>
       </div>
     </div>
   );
@@ -307,6 +309,7 @@ function TherapistDashboard({profile,onLogout}){
           )}
         </div>
       </div>
+      <Footer/>
     </div>
   );
 }
@@ -751,6 +754,8 @@ function ClientDiary({profile,onLogout,onProfileUpdate}){
           <button onClick={exportCSV} style={{width:"100%",padding:"13px",borderRadius:14,border:`1.5px solid ${P.border}`,background:P.card,color:P.text,fontSize:14,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:14,fontFamily:"inherit"}}>📤 전체 데이터 CSV로 내보내기</button>
         </>}
       </div>
+
+      <Footer/>
 
       {/* SKILL MODAL */}
       {skillModal&&<div onClick={()=>setSkillModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.25)",zIndex:100,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
