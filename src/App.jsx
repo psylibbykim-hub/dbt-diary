@@ -220,20 +220,32 @@ function TherapistDashboard({profile,onLogout}){
   const[entries,setEntries]=useState({});
   const[loading,setLoading]=useState(true);
   const[selDate,setSelDate]=useState(todayStr());
+  const[clientTab,setClientTab]=useState("diary");
+  const[statsRange,setStatsRange]=useState("week");
 
   useEffect(()=>{
     supabase.from("profiles").select("*").eq("therapist_id",profile.id).then(({data})=>{setClients(data||[]);setLoading(false);});
   },[]);
 
   const pickClient=async(c)=>{
-    setSelected(c);setSelDate(todayStr());
-    const{data}=await supabase.from("diary_entries").select("*").eq("user_id",c.id).order("date",{ascending:false}).limit(30);
+    setSelected(c);setSelDate(todayStr());setClientTab("diary");
+    const{data}=await supabase.from("diary_entries").select("*").eq("user_id",c.id).order("date",{ascending:false}).limit(60);
     const m={};(data||[]).forEach(e=>{m[e.date]=e;});setEntries(m);
   };
 
   const entry=selected?(entries[selDate]||emptyEntry()):null;
   const dateList=selected?[todayStr(),...Object.keys(entries).filter(d=>d!==todayStr()).sort((a,b)=>b.localeCompare(a))].slice(0,10):[];
   const maxImp=entry?Math.max(0,...Object.entries(entry.impulses||{}).filter(([k])=>k!=='_acts').map(([,v])=>Number(v))):0;
+
+  const buildClientStats=(days)=>[...Array(days)].map((_,i)=>{
+    const d=new Date();d.setDate(d.getDate()-(days-1-i));
+    const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const e=entries[ds]||emptyEntry();
+    const emos=Object.values(e.emotions||{});
+    const impV=Object.entries(e.impulses||{}).filter(([k])=>k!=='_acts').map(([,v])=>Number(v));
+    return{date:fmtDate(ds),감정평균:emos.length?Number((emos.reduce((a,b)=>a+b,0)/emos.length).toFixed(1)):0,최고충동:Math.max(0,...impV),스킬수:(e.skills||[]).length};
+  });
+  const clientStatsData=selected?buildClientStats(statsRange==="week"?7:30):[];
 
   const exportClientCSV=()=>{
     if(!selected||Object.keys(entries).length===0)return;
@@ -282,63 +294,84 @@ function TherapistDashboard({profile,onLogout}){
             <Card style={{textAlign:"center",padding:40}}><div style={{fontSize:30,marginBottom:10}}>👈</div><div style={{fontSize:14,color:P.muted}}>내담자를 선택하세요</div></Card>
           ):(
             <>
+              {/* 내담자 헤더 */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                <div style={{fontSize:15,fontWeight:700,color:P.text}}>📔 {selected.name}님의 다이어리</div>
+                <div style={{fontSize:15,fontWeight:700,color:P.text}}>🙋 {selected.name}님</div>
                 <button onClick={exportClientCSV} disabled={Object.keys(entries).length===0} style={{padding:"6px 12px",borderRadius:10,border:`1.5px solid ${P.accent2}`,background:P.card,color:P.accent2,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>⬇️ CSV</button>
               </div>
-              <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:14,paddingBottom:2}}>
-                {dateList.map(d=>{
-                  const isSel=d===selDate;
-                  return<button key={d} onClick={()=>setSelDate(d)} style={{flexShrink:0,padding:"5px 12px",borderRadius:20,border:isSel?`2px solid ${P.accent}`:`1.5px solid ${P.border}`,background:isSel?P.accent+"22":P.card,color:isSel?P.accent:P.muted,fontSize:12,fontWeight:isSel?700:400,cursor:"pointer",position:"relative"}}>
-                    {d===todayStr()?"오늘":d.slice(5).replace("-","/")}
-                    {entries[d]&&d!==selDate&&<span style={{position:"absolute",top:2,right:3,width:5,height:5,borderRadius:"50%",background:P.accent2}}/>}
-                  </button>;
-                })}
+              {/* 탭 */}
+              <div style={{display:"flex",gap:8,marginBottom:14}}>
+                {[{id:"diary",label:"📔 다이어리"},{id:"stats",label:"📊 통계"}].map(t=>(
+                  <button key={t.id} onClick={()=>setClientTab(t.id)} style={{flex:1,padding:"9px",borderRadius:12,border:clientTab===t.id?`2px solid ${P.accent}`:`1.5px solid ${P.border}`,background:clientTab===t.id?P.accent+"22":"transparent",color:clientTab===t.id?P.accent:P.muted,fontWeight:clientTab===t.id?700:400,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{t.label}</button>
+                ))}
               </div>
-              {!entries[selDate]?(
-                <Card style={{textAlign:"center",padding:30}}><div style={{color:P.muted,fontSize:14}}>이 날의 기록이 없어요.</div></Card>
-              ):(
-                <>
-                  <Card>
-                    <SecTitle title="감정 기록" emoji="🎭"/>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
-                      {EMOTIONS.map(({name,emoji})=>{
-                        const val=entry.emotions?.[name]??0;
-                        return val>0?<div key={name} style={{padding:"5px 11px",borderRadius:20,background:`hsl(${340-val*8},65%,72%)28`,border:`1.5px solid hsl(${340-val*8},65%,72%)`,fontSize:13}}>{emoji} {name} <strong>{val}</strong></div>:null;
+
+              {/* 다이어리 탭 */}
+              {clientTab==="diary"&&<>
+                <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:14,paddingBottom:2}}>
+                  {dateList.map(d=>{
+                    const isSel=d===selDate;
+                    return<button key={d} onClick={()=>setSelDate(d)} style={{flexShrink:0,padding:"5px 12px",borderRadius:20,border:isSel?`2px solid ${P.accent}`:`1.5px solid ${P.border}`,background:isSel?P.accent+"22":P.card,color:isSel?P.accent:P.muted,fontSize:12,fontWeight:isSel?700:400,cursor:"pointer",position:"relative"}}>
+                      {d===todayStr()?"오늘":d.slice(5).replace("-","/")}
+                      {entries[d]&&d!==selDate&&<span style={{position:"absolute",top:2,right:3,width:5,height:5,borderRadius:"50%",background:P.accent2}}/>}
+                    </button>;
+                  })}
+                </div>
+                {!entries[selDate]?(
+                  <Card style={{textAlign:"center",padding:30}}><div style={{color:P.muted,fontSize:14}}>이 날의 기록이 없어요.</div></Card>
+                ):(
+                  <>
+                    <Card>
+                      <SecTitle title="감정 기록" emoji="🎭"/>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                        {EMOTIONS.map(({name,emoji})=>{
+                          const val=entry.emotions?.[name]??0;
+                          return val>0?<div key={name} style={{padding:"5px 11px",borderRadius:20,background:`hsl(${340-val*8},65%,72%)28`,border:`1.5px solid hsl(${340-val*8},65%,72%)`,fontSize:13}}>{emoji} {name} <strong>{val}</strong></div>:null;
+                        })}
+                      </div>
+                      {entry.note&&<div style={{marginTop:12,fontSize:13,color:P.muted,background:P.bg,borderRadius:10,padding:"10px 12px",lineHeight:1.6}}>"{entry.note}"</div>}
+                    </Card>
+                    <Card>
+                      <SecTitle title="충동 기록" emoji="⚡"/>
+                      {IMPULSES.map(imp=>{
+                        const val=entry.impulses?.[imp.name]??0;
+                        return<div key={imp.name} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                          <span style={{fontSize:13,flex:1}}>{imp.emoji} {imp.name}</span>
+                          <div style={{flex:2,height:8,borderRadius:4,background:P.border,overflow:"hidden"}}><div style={{width:`${val*10}%`,height:"100%",background:impColor(val),borderRadius:4}}/></div>
+                          <span style={{fontSize:13,fontWeight:700,color:impColor(val),width:28,textAlign:"right"}}>{val}</span>
+                        </div>;
                       })}
+                    </Card>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                      <Card style={{marginBottom:0}}>
+                        <SecTitle title="사용한 스킬" emoji="🧠"/>
+                        {(entry.skills||[]).length>0?entry.skills.map(s=><div key={s} style={{fontSize:12,color:P.text,padding:"4px 0",borderBottom:`1px solid ${P.border}`}}>{s}</div>):<div style={{fontSize:12,color:P.muted}}>기록 없음</div>}
+                      </Card>
+                      <Card style={{marginBottom:0}}>
+                        <SecTitle title="목표 체크" emoji="✅"/>
+                        {[{k:"medication",label:"💊 처방약"},{k:"exercise",label:"🏃 운동"},{k:"therapy",label:"💬 상담"}].map(g=>(
+                          <div key={g.k} style={{fontSize:12,padding:"4px 0",borderBottom:`1px solid ${P.border}`,display:"flex",justifyContent:"space-between"}}>
+                            <span>{g.label}</span><span style={{color:entry.goals?.[g.k]?P.success:P.muted}}>{entry.goals?.[g.k]?"✓":"✗"}</span>
+                          </div>
+                        ))}
+                        <div style={{fontSize:12,marginTop:6,color:P.muted}}>수면: {entry.goals?.sleep||"-"}</div>
+                        <div style={{fontSize:12,color:P.muted}}>식사: {entry.goals?.meals||0}회</div>
+                      </Card>
                     </div>
-                    {entry.note&&<div style={{marginTop:12,fontSize:13,color:P.muted,background:P.bg,borderRadius:10,padding:"10px 12px",lineHeight:1.6}}>"{entry.note}"</div>}
-                  </Card>
-                  <Card>
-                    <SecTitle title="충동 기록" emoji="⚡"/>
-                    {IMPULSES.map(imp=>{
-                      const val=entry.impulses?.[imp.name]??0;
-                      return<div key={imp.name} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                        <span style={{fontSize:13,flex:1}}>{imp.emoji} {imp.name}</span>
-                        <div style={{flex:2,height:8,borderRadius:4,background:P.border,overflow:"hidden"}}><div style={{width:`${val*10}%`,height:"100%",background:impColor(val),borderRadius:4}}/></div>
-                        <span style={{fontSize:13,fontWeight:700,color:impColor(val),width:28,textAlign:"right"}}>{val}</span>
-                      </div>;
-                    })}
-                  </Card>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
-                    <Card style={{marginBottom:0}}>
-                      <SecTitle title="사용한 스킬" emoji="🧠"/>
-                      {(entry.skills||[]).length>0?entry.skills.map(s=><div key={s} style={{fontSize:12,color:P.text,padding:"4px 0",borderBottom:`1px solid ${P.border}`}}>{s}</div>):<div style={{fontSize:12,color:P.muted}}>기록 없음</div>}
-                    </Card>
-                    <Card style={{marginBottom:0}}>
-                      <SecTitle title="목표 체크" emoji="✅"/>
-                      {[{k:"medication",label:"💊 처방약"},{k:"exercise",label:"🏃 운동"},{k:"therapy",label:"💬 상담"}].map(g=>(
-                        <div key={g.k} style={{fontSize:12,padding:"4px 0",borderBottom:`1px solid ${P.border}`,display:"flex",justifyContent:"space-between"}}>
-                          <span>{g.label}</span><span style={{color:entry.goals?.[g.k]?P.success:P.muted}}>{entry.goals?.[g.k]?"✓":"✗"}</span>
-                        </div>
-                      ))}
-                      <div style={{fontSize:12,marginTop:6,color:P.muted}}>수면: {entry.goals?.sleep||"-"}</div>
-                      <div style={{fontSize:12,color:P.muted}}>식사: {entry.goals?.meals||0}회</div>
-                    </Card>
-                  </div>
-                  {maxImp>=7&&<div style={{marginTop:14,padding:"12px 16px",background:P.danger+"18",borderRadius:14,border:`1px solid ${P.danger}44`,fontSize:13,color:P.danger,fontWeight:600}}>⚠️ 이 날 충동 강도가 {maxImp}/10 으로 높았어요. 확인이 필요합니다.</div>}
-                </>
-              )}
+                    {maxImp>=7&&<div style={{marginTop:14,padding:"12px 16px",background:P.danger+"18",borderRadius:14,border:`1px solid ${P.danger}44`,fontSize:13,color:P.danger,fontWeight:600}}>⚠️ 이 날 충동 강도가 {maxImp}/10 으로 높았어요. 확인이 필요합니다.</div>}
+                  </>
+                )}
+              </>}
+
+              {/* 통계 탭 */}
+              {clientTab==="stats"&&<>
+                <div style={{display:"flex",gap:8,marginBottom:14}}>
+                  {["week","month"].map(r=><button key={r} onClick={()=>setStatsRange(r)} style={{flex:1,padding:"8px",borderRadius:12,border:statsRange===r?`2px solid ${P.accent}`:`1.5px solid ${P.border}`,background:statsRange===r?P.accent+"22":P.card,color:statsRange===r?P.accent:P.muted,fontWeight:statsRange===r?700:400,fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>{r==="week"?"최근 7일":"최근 30일"}</button>)}
+                </div>
+                <Card><SecTitle title="감정 평균 추이" emoji="🎭"/><ResponsiveContainer width="100%" height={150}><LineChart data={clientStatsData}><XAxis dataKey="date" tick={{fontSize:10,fill:P.muted}}/><YAxis domain={[0,10]} tick={{fontSize:10,fill:P.muted}}/><Tooltip contentStyle={{borderRadius:10,fontSize:12}}/><Line type="monotone" dataKey="감정평균" stroke={P.accent} strokeWidth={2} dot={{fill:P.accent,r:3}}/></LineChart></ResponsiveContainer></Card>
+                <Card><SecTitle title="충동 최고값 추이" emoji="⚡"/><ResponsiveContainer width="100%" height={130}><BarChart data={clientStatsData}><XAxis dataKey="date" tick={{fontSize:10,fill:P.muted}}/><YAxis domain={[0,10]} tick={{fontSize:10,fill:P.muted}}/><Tooltip contentStyle={{borderRadius:10,fontSize:12}}/><Bar dataKey="최고충동" fill={P.accent} radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></Card>
+                <Card><SecTitle title="DBT 스킬 사용" emoji="🧠"/><ResponsiveContainer width="100%" height={130}><BarChart data={clientStatsData}><XAxis dataKey="date" tick={{fontSize:10,fill:P.muted}}/><YAxis tick={{fontSize:10,fill:P.muted}}/><Tooltip contentStyle={{borderRadius:10,fontSize:12}}/><Bar dataKey="스킬수" fill={P.accent2} radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></Card>
+              </>}
             </>
           )}
         </div>
